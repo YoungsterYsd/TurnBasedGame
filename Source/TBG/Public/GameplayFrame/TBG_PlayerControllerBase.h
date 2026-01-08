@@ -9,13 +9,11 @@
 /**
  * 
  */
-class ATBG_BattlePawn;
+
 UCLASS()
 class TBG_API ATBG_PlayerControllerBase : public APlayerController
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
-	TSubclassOf<ATBG_BattlePawn> BattlePawnClass;
 
 };

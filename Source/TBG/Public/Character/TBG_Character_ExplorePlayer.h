@@ -16,6 +16,7 @@ class UInputMappingContext;
 //镜头控制
 class USpringArmComponent;
 class UCameraComponent;
+class ATBG_Character_BattlePlayer;
 
 UCLASS()
 class TBG_API ATBG_Character_ExplorePlayer : public ATBG_CharacterBase
@@ -33,6 +34,9 @@ public:
 	UInputMappingContext* IMC_SR;
 	bool bOpenTeamUI;
 	bool bATK;
+	//记录我方站位和敌人信息
+	UPROPERTY(EditDefaultsOnly, Category = "Presets")
+	TMap<int32, TSubclassOf<ATBG_Character_BattlePlayer>> PlayerTeamInfo;
 protected:
 	virtual void BeginPlay() override;
 

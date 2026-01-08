@@ -9,6 +9,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Character/TBG_Character_ExploreEnemies.h"
+#include "Character/TBG_Character_BattlePlayer.h"
 
 ATBG_Character_ExplorePlayer::ATBG_Character_ExplorePlayer()
 {
@@ -146,6 +147,7 @@ void ATBG_Character_ExplorePlayer::MeleeDetectEnemy()
 		{
 			FindEnemyInfo(DetectedActor);
 			//TOdo,Ω¯»Î’Ω∂∑
+			return;
 		}
 	}
 }

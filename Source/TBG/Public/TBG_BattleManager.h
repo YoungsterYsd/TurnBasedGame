@@ -17,8 +17,10 @@ class ATBG_Character_BattlePlayer;
 class ATBG_Character_BattleEnemies;
 class ATBG_BattlePawn;
 class ACameraActor;
-
-UCLASS()
+class ATBG_CharacterBase_Battle;
+class UBattleLayOut;
+class UUserWidget;
+UCLASS(Blueprintable)
 class TBG_API UTBG_BattleManager : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
@@ -32,22 +34,37 @@ public:
 	void ChangeCameraAndStopMovement();
 
 	ACameraActor* RetrieveCamera(FName tag);
+	void InitSpawnPostion();
+	void RetrieveEnemyPosition(int32 PosIndex, FVector& TargetPos, float& yaw);
+	void RetrievePlayerPosition(int32 PosIndex, FVector& TargetPos, float& yaw);
+	void SpawnEnemiesAndDecideLocation();
+	void SpawnPlayerAndDecideLocation();
+
+	void LoadUI();
 
 protected:
 
 	EProgressPhase ProgressPhase{ EProgressPhase::PP_EMAX};
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	TSubclassOf<ATBG_BattlePawn> BattlePawnClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	TMap<int32, ATBG_CharacterBase_Battle*> TeamInstForUI;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	TSubclassOf<UUserWidget> BattleLayoutClassRef;
+
+	UBattleLayOut* BattleLayOut;
 
 	ATBG_Character_ExploreEnemies* ExploreEnemyRef = nullptr;
 	ATBG_Character_ExplorePlayer* ExplorePlayerRef = nullptr;
 	TMap<int32, TSubclassOf<ATBG_Character_BattleEnemies>> EnemyTeamInfo;
 	TMap<int32, TSubclassOf<ATBG_Character_BattlePlayer>> PlayerTeamInfo;
-	
-	TArray<ATBG_Character_BattleEnemies*> ememiesRefArr;
+
+	TArray<ATBG_Character_BattleEnemies*> enemiesRefArr;
 	TArray<ATBG_Character_BattleEnemies*> deadEnemyRefArr;
 
-	TArray<ATBG_Character_ExplorePlayer*> playerRefArr;
-	TArray<ATBG_Character_ExplorePlayer*> deadPlayerRefArr;
+	TArray<ATBG_Character_BattlePlayer*> playerRefArr;
+	TArray<ATBG_Character_BattlePlayer*> deadPlayerRefArr;
 
 	TArray<ACameraActor*> camerasArr;
 	TArray<AActor*> enemySpawnPointsArr;

@@ -13,5 +13,8 @@ UCLASS()
 class TBG_API ATBG_Character_BattlePlayer : public ATBG_CharacterBase_Battle
 {
 	GENERATED_BODY()
+public:
+	UPROPERTY(EditAnywhere,CateGory = "Runtime")
+	int32 PositionID = -1;
 	
 };

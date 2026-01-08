@@ -21,5 +21,8 @@ public:
 	void EnterBattleThroughBM(ATBG_Character_ExplorePlayer* playerRef);
 	//记录敌人站位和敌人信息
 	UPROPERTY(EditDefaultsOnly, Category = "Presets")
-	TMap<int32, TSubclassOf<ATBG_Character_BattleEnemies>>EnemyInfo;
+	TMap<int32, TSubclassOf<ATBG_Character_BattleEnemies>>EnemyTeamInfo;
+public:
+	UPROPERTY(EditAnywhere)
+	bool bBOSSFight = false;
 };
