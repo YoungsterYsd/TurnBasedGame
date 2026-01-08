@@ -144,7 +144,14 @@ void ATBG_Character_ExplorePlayer::MeleeDetectEnemy()
 		AActor* DetectedActor = Cast<ATBG_Character_ExploreEnemies>(Ele.GetActor());
 		if (DetectedActor != nullptr)
 		{
+			FindEnemyInfo(DetectedActor);
 			//TOdo,Ω¯»Î’Ω∂∑
 		}
 	}
+}
+
+void ATBG_Character_ExplorePlayer::FindEnemyInfo(AActor* InEnemy)
+{
+	ATBG_Character_ExploreEnemies* HitTarget = Cast<ATBG_Character_ExploreEnemies>(InEnemy);
+	HitTarget->EnterBattleThroughBM(this);
 }

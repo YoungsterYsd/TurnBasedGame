@@ -57,8 +57,11 @@ protected:
 
 	UFUNCTION()
 	void TryAttack_Started(const FInputActionValue& val);
-	void MeleeDetectEnemy();
+
 #pragma endregion
+	//Õ½¶·Ä£Ê½ÇÐ»»
+	void MeleeDetectEnemy();
+	void FindEnemyInfo(AActor* InEnemy);
 private:
 	ATBG_PlayerControllerBase* PC = nullptr;
 
