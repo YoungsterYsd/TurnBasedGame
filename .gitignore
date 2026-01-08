@@ -73,3 +73,16 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+
+#ThirdPersonTemplate_relative
+Content/__ExternalActors__/*
+Content/__ExternalObjects__/*
+Content/Input/*
+Content/LevelPrototyping/*
+Content/ThirdPerson/*
+Content/Variant_Combat/*
+Content/Variant_Platforming/*
+Content/Variant_SideScrolling/*
+Content/Characters/Mannequins/*
+Source/TBG/TP_ThirdPerson/*
