@@ -1,0 +1,42 @@
+// YangSida Allright reserved
+
+
+#include "GameplayFrame/TBG_BattlePawn.h"
+
+#include "GameplayFrame/TBG_PlayerControllerBase.h"
+
+
+ATBG_BattlePawn::ATBG_BattlePawn()
+{
+	PrimaryActorTick.bCanEverTick = false;
+
+}
+
+void ATBG_BattlePawn::TryNormalATK()
+{
+	//todo 普通攻击
+}
+
+
+void ATBG_BattlePawn::BeginPlay()
+{
+	Super::BeginPlay();
+	//显示鼠标，改变游戏模式
+	PC = Cast<ATBG_PlayerControllerBase>(Controller);
+	if (PC == nullptr)return;
+	PC->bShowMouseCursor = true;
+	PC->SetInputMode(FInputModeGameAndUI());
+}
+
+void ATBG_BattlePawn::Destroyed()
+{
+	Super::Destroyed();
+
+	PC = Cast<ATBG_PlayerControllerBase>(Controller);
+	if (PC == nullptr)return;
+	PC->bShowMouseCursor = false;
+	PC->SetInputMode(FInputModeGameOnly());
+}
+
+
+
