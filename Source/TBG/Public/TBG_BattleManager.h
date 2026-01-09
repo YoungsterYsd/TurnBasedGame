@@ -40,8 +40,6 @@ public:
 	void SpawnEnemiesAndDecideLocation();
 	void SpawnPlayerAndDecideLocation();
 
-	void LoadUI();
-
 protected:
 
 	EProgressPhase ProgressPhase{ EProgressPhase::PP_EMAX};
@@ -50,10 +48,9 @@ public:
 	TSubclassOf<ATBG_BattlePawn> BattlePawnClass;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	TMap<int32, ATBG_CharacterBase_Battle*> TeamInstForUI;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
-	TSubclassOf<UUserWidget> BattleLayoutClassRef;
 
 	UBattleLayOut* BattleLayOut;
+	void LoadBattleUI();
 
 	ATBG_Character_ExploreEnemies* ExploreEnemyRef = nullptr;
 	ATBG_Character_ExplorePlayer* ExplorePlayerRef = nullptr;

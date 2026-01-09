@@ -54,7 +54,7 @@ void UTBG_BattleManager::PreInitializeBattle()
 	// 根据玩家队伍信息生成玩家
 	SpawnPlayerAndDecideLocation();
 	//生成战斗UI/隐藏探索UI
-	LoadUI();
+	LoadBattleUI();
 	// TBD - 若探索模式下玩家角色被敌人击中，则敌人先手攻击
 
 	// TBD - 进入B1b阶段，计算行动值
@@ -229,15 +229,12 @@ void UTBG_BattleManager::SpawnPlayerAndDecideLocation()
 	}
 }
 
-void UTBG_BattleManager::LoadUI()
+void UTBG_BattleManager::LoadBattleUI()
 {
-	if(BattleLayoutClassRef)
+	if (ExplorePlayerRef != nullptr)
 	{
-		BattleLayOut = CreateWidget<UBattleLayOut>(GetWorld(), BattleLayoutClassRef);
-		if (BattleLayOut)
-		{
-			BattleLayOut->ConstructDeferred(this);
-			BattleLayOut->AddToViewport();
-		}
+		ATBG_PlayerControllerBase* PC = ExplorePlayerRef->GetTBGPlayerController();
+		PC->LoadBattleUI(this);
+		BattleLayOut = PC->BattleLayOut;
 	}
 }
