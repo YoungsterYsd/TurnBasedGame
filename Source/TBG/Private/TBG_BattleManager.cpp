@@ -75,6 +75,8 @@ void ATBG_BattleManager::HandlePlayerAttack(ATBG_Character_BattlePlayer* InPlaye
 	//GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("player!"));
 	ProgressPhase = EProgressPhase::PP_B2a_PlayerActionTime;
 	ActivePlayer = InPlayer;
+	//临时处理
+	SetMultipleEnemyLoacks();
 	//TBD 更新UI 切换镜头
 }
 
@@ -261,7 +263,7 @@ void ATBG_BattleManager::CalculateActionValue()
 	TMap< ATBG_Character_BattleEnemies*, float> local_Enemy_ActionValue;
 	TMap< ATBG_Character_BattlePlayer*, float> local_Player_ActionValue;
 	TMap<ACharacter*, float>local_CharacterQueue;
-	local_SortedCharacters.Empty();
+	TArray<ACharacter*> local_SortedCharacters;
 	float local_WinnerActionVal = 0.f;//所有成员需要减去该行动值
 	// 检查角色是否存活，获取最新行动值剔除不可移动对象
 	for (auto ArrElement : enemiesRefArr)
@@ -393,11 +395,12 @@ void ATBG_BattleManager::SwitchEnemyLockIcon(bool bNext)
 	if (ProgressPhase != EProgressPhase::PP_B2a_PlayerActionTime)return;
 	//TBD 复活技能处理
 	//根据按键查找对应敌人的Key值
-	if (bNext)
+	if (!bNext)
 	{
+		// TBD - 是否释放增益魔法？如回血、复活、拉条等
 		if ((indexForLockedTarget + 1) < enemiesRefArr.Num())
 		{
-			indexForLockedTarget += 1;
+			indexForLockedTarget++;
 		}
 		else
 		{
@@ -406,13 +409,14 @@ void ATBG_BattleManager::SwitchEnemyLockIcon(bool bNext)
 	}
 	else
 	{
-		if (indexForLockedTarget < 0 )
+		if (indexForLockedTarget > 0)
 		{
-			indexForLockedTarget = enemiesRefArr.Num() - 1;
+			indexForLockedTarget--;
 		}
 		else
 		{
-			indexForLockedTarget -= 1; 
+			// TBD - 是否释放增益魔法？如回血、复活、拉条等
+			indexForLockedTarget = enemiesRefArr.Num() - 1;
 		}
 	}
 	//TBD是否释放复活魔法
@@ -428,9 +432,11 @@ void ATBG_BattleManager::SetMultipleEnemyLoacks()
 	{
 		GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("attack all!"));
 	}
-	else
+	else//单体显示一个锁定
 	{
-		GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("attack single!"));
+		currentEnemyTarget = enemiesRefArr[indexForLockedTarget];
+		lastClickedEnemyActor = currentEnemyTarget;
+		ShowEnemyLockIconByIndex(indexForLockedTarget);
 	}
 }
 
@@ -439,6 +445,19 @@ bool ATBG_BattleManager::IsMutipleTargets()
 	if (!ActivePlayer) return false;
 	bool result =*(ActivePlayer->playerAtr.MultipleTargets.Find(ActivePlayer->attackType));
 	return false;
+}
+
+void ATBG_BattleManager::ShowEnemyLockIconByIndex(int32 Index)
+{
+	for (auto ArrElement : enemiesRefArr)
+	{
+		ArrElement->UpdateLockIcon(true);
+	}
+	//若有效，则开启锁定
+	if (enemiesRefArr[Index])
+	{
+		enemiesRefArr[Index]->UpdateLockIcon(false);
+	}
 }
 
 void ATBG_BattleManager::BeginPlay()

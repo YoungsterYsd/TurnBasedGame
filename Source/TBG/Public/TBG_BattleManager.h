@@ -51,6 +51,7 @@ public:
 	void SetMultipleEnemyLoacks();
 
 	bool IsMutipleTargets();
+	void ShowEnemyLockIconByIndex(int32 Index);
 
 protected:
 	virtual void BeginPlay() override;
@@ -87,13 +88,16 @@ public:
 
 	ATBG_BattlePawn* BattlePawn;
 	FTimerHandle DisplayEnemyTimeHandle;
-
+	//处理活跃中的角色
 	ATBG_Character_BattleEnemies* ActiveEnemy;
 	ATBG_Character_BattlePlayer* ActivePlayer;
 
-	int indexForLockedTarget = 2;//初始选中间的敌人
+	//选中的敌人相关
+	ATBG_Character_BattleEnemies* currentEnemyTarget;
+	//鼠标点击用
+	AActor* lastClickedEnemyActor;
+	int indexForLockedTarget = 2;
 private:
 	//TOdo 需要在返回普通状态时，将是否boss战变量置为false
 	bool bBOSSFight = false;
-	TArray<ACharacter*> local_SortedCharacters;
 };
