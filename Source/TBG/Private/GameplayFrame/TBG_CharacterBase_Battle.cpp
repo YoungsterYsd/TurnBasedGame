@@ -2,12 +2,29 @@
 
 
 #include "GameplayFrame/TBG_CharacterBase_Battle.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Camera/CameraComponent.h"
+#include "Components/WidgetComponent.h"
+
 
 // Sets default values
 ATBG_CharacterBase_Battle::ATBG_CharacterBase_Battle()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
+
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("Camera Boom");
+	CameraBoom->SetupAttachment(RootComponent);
+	CameraBoom->TargetArmLength = 300.0f;
+	CameraBoom->bDoCollisionTest = false;
+
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>("Follow Camera");
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	FollowCamera->bUsePawnControlRotation = false;
+
+	LockIcon = CreateDefaultSubobject<UWidgetComponent>("Lock");
+	LockIcon->SetupAttachment(RootComponent);
+	LockIcon->bHiddenInGame = true;
 
 }
 
@@ -16,13 +33,6 @@ void ATBG_CharacterBase_Battle::BeginPlay()
 {
 	Super::BeginPlay();
 	
-}
-
-// Called every frame
-void ATBG_CharacterBase_Battle::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 void ATBG_CharacterBase_Battle::Int_GetActionValue(float& actionVal)
@@ -44,7 +54,7 @@ void ATBG_CharacterBase_Battle::Int_RefreshActionValueBySpeed()
 void ATBG_CharacterBase_Battle::GetFactionAVAvartar(bool &bPF, float &aV, UTexture2D* &AI)
 {
 	bPF = bPlayerFaction;
-	aV = actionValue;
+	aV = ActionValue;
 	AI = AvatarIcon;
 }
 

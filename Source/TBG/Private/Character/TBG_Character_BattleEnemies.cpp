@@ -2,9 +2,18 @@
 
 
 #include "Character/TBG_Character_BattleEnemies.h"
+#include "Components/WidgetComponent.h"
+
+ATBG_Character_BattleEnemies::ATBG_Character_BattleEnemies()
+{
+	HeadBar = CreateDefaultSubobject<UWidgetComponent>("Head Bar");
+	HeadBar->SetupAttachment(RootComponent);
+	HeadBar->bHiddenInGame = true;
+}
 
 void ATBG_Character_BattleEnemies::UpdateLockIcon(bool bHide)
 {
+	LockIcon->bHiddenInGame = bHide;
 }
 
 void ATBG_Character_BattleEnemies::Int_RefreshActionValueBySpeed()

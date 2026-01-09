@@ -32,6 +32,9 @@ public:
 	
 	void PreInitializeBattle();
 	void PostInitialzeBattle();
+	void BattleEnd(EBattleFlags endResult);
+	void HandlePlayerAttack(ATBG_Character_BattlePlayer* InPlayer);
+	void HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy);
 
 	//A1
 	void ChangeCameraAndStopMovement();
@@ -44,11 +47,11 @@ public:
 
 	//B1
 	void CalculateActionValue();
-	
+	EBattleFlags CheckGameOver(TMap<ATBG_Character_BattleEnemies*,float> eArr, TMap<ATBG_Character_BattlePlayer*, float> pArr);
 
 protected:
 
-	EProgressPhase ProgressPhase{ EProgressPhase::PP_EMAX};
+	EProgressPhase ProgressPhase{ EProgressPhase::PP_EMAX}; 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	TSubclassOf<ATBG_BattlePawn> BattlePawnClass;

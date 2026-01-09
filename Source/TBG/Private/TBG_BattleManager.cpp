@@ -75,6 +75,21 @@ void UTBG_BattleManager::PostInitialzeBattle()
 	CalculateActionValue();
 }
 
+void UTBG_BattleManager::BattleEnd(EBattleFlags endResult)
+{
+	//胜利则退出战斗状态，回到探索，若失败，则退出游戏
+}
+
+void UTBG_BattleManager::HandlePlayerAttack(ATBG_Character_BattlePlayer* InPlayer)
+{
+	GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("player!"));
+}
+
+void UTBG_BattleManager::HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy)
+{
+	GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("Enemy!"));
+}
+
 void UTBG_BattleManager::ChangeCameraAndStopMovement()
 {
 	// 生成Battle Pawn，控制它并使用在其中定义的按键
@@ -318,13 +333,66 @@ void UTBG_BattleManager::CalculateActionValue()
 
 	for (auto ArrElement : enemiesRefArr)
 	{
+		//对应变量为bHiddenInGame，为假时显示
 		ArrElement->UpdateLockIcon(true);
 	}
 
 	//检查战斗是否结束
+	EBattleFlags CurBattleFlag = EBattleFlags::BF_EMAX;
+	CurBattleFlag = CheckGameOver(local_Enemy_ActionValue, local_Player_ActionValue);
+	switch (CurBattleFlag)
+	{
+		case EBattleFlags::BF_EMAX:
+			return;
+			break;
+		case EBattleFlags::BF_ContinueBattle:
+			//跳出，继续执行后续内容
+			break;
+		case EBattleFlags::BF_PlayerWin:
+			BattleEnd(CurBattleFlag);
+			break;
+		case EBattleFlags::BF_EnemyWin:
+			BattleEnd(CurBattleFlag);
+			break;
+		default:
+			return;
+			break;
+	}
+	// 当前行动对象进入准备状态（判断敌人和玩家的数组中行动值谁最小）
+	TArray<float> l_LocalFloatsEAV;
+	TArray<float> l_LocalFloatsPAV;
+	int32 minIndex_E;
+	float minValue_E;
+	int32 minIndex_P;
+	float minValue_P;
+	local_Enemy_ActionValue.GenerateValueArray(l_LocalFloatsEAV);
+	local_Player_ActionValue.GenerateValueArray(l_LocalFloatsPAV);
+	UKismetMathLibrary::MinOfFloatArray(l_LocalFloatsEAV, minIndex_E, minValue_E);
+	UKismetMathLibrary::MinOfFloatArray(l_LocalFloatsPAV, minIndex_P, minValue_P);
+	if (minValue_E > minValue_P)
+	{
+		// 玩家角色的行动值小，玩家行动
+		TArray<ATBG_Character_BattlePlayer*> l_LocalPlayerChars;
+		local_Player_ActionValue.GenerateKeyArray(l_LocalPlayerChars);
+		HandlePlayerAttack(l_LocalPlayerChars[minIndex_P]);
+	}
+	else
+	{
+		// 敌人的行动值小，敌人行动
+		TArray< ATBG_Character_BattleEnemies*> l_LocalEnemyChars;
+		local_Enemy_ActionValue.GenerateKeyArray(l_LocalEnemyChars);
+		HandleEnemyAttack(l_LocalEnemyChars[minIndex_E]);
+	}
 }
 
-void UTBG_BattleManager::LoadBattleUI()
+EBattleFlags UTBG_BattleManager::CheckGameOver(TMap<ATBG_Character_BattleEnemies*, float> eArr, TMap<ATBG_Character_BattlePlayer*, float> pArr)
+{
+	if (eArr.Num() == 0)return EBattleFlags::BF_PlayerWin;
+	if (pArr.Num() == 0)return EBattleFlags::BF_PlayerWin;
+	return EBattleFlags::BF_ContinueBattle;
+}
+
+void UTBG_BattleManager::LoadBattleUI() 
 {
 	if (ExplorePlayerRef != nullptr)
 	{

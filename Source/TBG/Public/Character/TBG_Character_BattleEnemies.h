@@ -10,12 +10,14 @@
 /**
  * 
  */
+class 	UWidgetComponent;
 UCLASS()
 class TBG_API ATBG_Character_BattleEnemies : public ATBG_CharacterBase_Battle
 {
 	GENERATED_BODY()
 	
 public:
+	ATBG_Character_BattleEnemies();
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Runtime")
 	FEnemyCharAttributes enemyInfo;
 
@@ -24,6 +26,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	FName DataRow = FName("1");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	UWidgetComponent* HeadBar;
 
 	void UpdateLockIcon(bool bHide);
 	virtual void Int_RefreshActionValueBySpeed() override;

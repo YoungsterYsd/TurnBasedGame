@@ -7,6 +7,9 @@
 #include "Interface/CombatInterface.h"
 #include "TBG_CharacterBase_Battle.generated.h"
 
+class USpringArmComponent;
+class UCameraComponent;
+class UWidgetComponent;
 UCLASS()
 class TBG_API ATBG_CharacterBase_Battle : public ACharacter,public ICombatInterface
 {
@@ -19,16 +22,19 @@ public:
 	float ActionValue = 0.f;
 	float Distance = 10000.f;
 
-
 	bool bPlayerFaction = false;
-	float actionValue = 0.f;
 	UTexture2D* AvatarIcon;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "Components")
+	TObjectPtr<USpringArmComponent> CameraBoom;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
+	TObjectPtr<UCameraComponent> FollowCamera;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
+	TObjectPtr<UWidgetComponent> LockIcon;
 protected:
 	virtual void BeginPlay() override;
 
 public:	
-	virtual void Tick(float DeltaTime) override;
 	virtual void Int_GetActionValue(float& actionVal) override;
 	virtual void Int_UpdateActionValue(float winnerVal) override;
 	virtual void Int_RefreshActionValueBySpeed() override;

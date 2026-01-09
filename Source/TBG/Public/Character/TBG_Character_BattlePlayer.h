@@ -10,12 +10,14 @@
 /**
  * 
  */
+class 	UWidgetComponent;
 struct FPlayerCharAttributes;
 UCLASS()
 class TBG_API ATBG_Character_BattlePlayer : public ATBG_CharacterBase_Battle
 {
 	GENERATED_BODY()
 public:
+	ATBG_Character_BattlePlayer();
 	UPROPERTY(EditAnywhere,CateGory = "Runtime")
 	int32 PositionID = -1;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, CateGory = "Runtime")
@@ -25,6 +27,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, CateGory = "Presets")
 	FName DataRow = FName("1");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	UWidgetComponent* MarkedIcon;
 
 	virtual void Int_RefreshActionValueBySpeed() override;
 protected:

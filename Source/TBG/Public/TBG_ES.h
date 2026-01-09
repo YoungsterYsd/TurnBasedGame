@@ -55,6 +55,15 @@ enum class ECombatType : uint8
 	CT_Imaginary				UMETA(DisplayName = Imaginary)
 };
 
+UENUM(BlueprintType)
+enum class EBattleFlags : uint8
+{
+	BF_EMAX						UMETA(DisplayName = EMAX),
+	BF_ContinueBattle			UMETA(DisplayName = ContinueBattle),
+	BF_PlayerWin				UMETA(DisplayName = PlayerWin),
+	BF_EnemyWin					UMETA(DisplayName = EnemyWin)
+};
+
 USTRUCT(BlueprintType)
 struct FBuffInfo : public FTableRowBase
 {

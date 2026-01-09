@@ -2,7 +2,14 @@
 
 
 #include "Character/TBG_Character_BattlePlayer.h"
+#include "Components/WidgetComponent.h"
 
+ATBG_Character_BattlePlayer::ATBG_Character_BattlePlayer()
+{
+	MarkedIcon = CreateDefaultSubobject<UWidgetComponent>("Marked Icon");
+	MarkedIcon->SetupAttachment(RootComponent);
+	MarkedIcon->bHiddenInGame = true;
+}
 
 void ATBG_Character_BattlePlayer::Int_RefreshActionValueBySpeed()
 {
