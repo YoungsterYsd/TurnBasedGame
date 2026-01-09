@@ -13,6 +13,8 @@
 #include "Character/TBG_Character_BattlePlayer.h"
 #include "Character/TBG_Character_BattleEnemies.h"
 #include "BattleLayOut.h"
+#include "Interface/CombatInterface.h"
+#include "Kismet\KismetMathLibrary.h"
 
 void UTBG_BattleManager::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -33,6 +35,9 @@ void UTBG_BattleManager::InitBattle(ATBG_Character_ExploreEnemies* InEnemyRef, A
 	bBOSSFight = ExploreEnemyRef->bBOSSFight;
 	//初始化战场
 	PreInitializeBattle();
+	//展示敌人阵容的时间
+	GetWorld()->GetTimerManager().SetTimer(DisplayEnemyTimeHandle, this,&UTBG_BattleManager::PostInitialzeBattle,EnemyDisplayTime,false);
+
 }
 
 void UTBG_BattleManager::PreInitializeBattle()
@@ -58,6 +63,16 @@ void UTBG_BattleManager::PreInitializeBattle()
 	// TBD - 若探索模式下玩家角色被敌人击中，则敌人先手攻击
 
 	// TBD - 进入B1b阶段，计算行动值
+}
+
+void UTBG_BattleManager::PostInitialzeBattle()
+{
+	//改变阶段
+	ProgressPhase = EProgressPhase::PP_B1_CalculateActionValue;
+	// TBD - 若探索模式下玩家角色被敌人击中，则敌人先手攻击
+
+	// TBD - 进入B1b阶段，计算行动值
+	CalculateActionValue();
 }
 
 void UTBG_BattleManager::ChangeCameraAndStopMovement()
@@ -227,6 +242,86 @@ void UTBG_BattleManager::SpawnPlayerAndDecideLocation()
 
 		// TBD - 绑定player被击败后的回调
 	}
+}
+
+void UTBG_BattleManager::CalculateActionValue()
+{
+
+	//定义排序相关本地变量
+	TMap< ATBG_Character_BattleEnemies*, float> local_Enemy_ActionValue;
+	TMap< ATBG_Character_BattlePlayer*, float> local_Player_ActionValue;
+	TMap<ACharacter*, float>local_CharacterQueue;
+	local_SortedCharacters.Empty();
+	float local_WinnerActionVal = 0.f;//所有成员需要减去该行动值
+	// 检查角色是否存活，获取最新行动值剔除不可移动对象
+	for (auto ArrElement : enemiesRefArr)
+	{
+		if (!ArrElement->bDead)
+		{
+			local_Enemy_ActionValue.Add(ArrElement, ArrElement->ActionValue);
+			local_CharacterQueue.Add(ArrElement, ArrElement->ActionValue);
+		}
+		else
+		{
+			//TBD 被消灭的敌人解绑对应函数
+			deadEnemyRefArr.Add(ArrElement);
+		}
+	}
+	for (auto ArrElement : playerRefArr)
+	{
+		if (!ArrElement->bDead)
+		{
+			local_Player_ActionValue.Add(ArrElement, ArrElement->ActionValue);
+			local_CharacterQueue.Add(ArrElement, ArrElement->ActionValue);
+		}
+		else
+		{
+			//TBD 被消灭的角色解绑对应函数
+			deadPlayerRefArr.Add(ArrElement);
+		}
+	}
+	//刷新数值，排除不可行动角色
+	local_Enemy_ActionValue.GenerateKeyArray(enemiesRefArr);
+	local_Player_ActionValue.GenerateKeyArray(playerRefArr);
+	//TBD 根据行动值排序,新建映射的原因是，需要遍历的对象会在循环中被更改，所以保存备份，根据备份信息对原实例进行修改。
+	TMap<ACharacter*, float>local_NumDummy;
+	local_NumDummy = local_CharacterQueue;
+	for (auto ArrElement : local_NumDummy)
+	{
+		//依次找到最小值，存入数组后删除
+		TArray<float> localFloats;
+		TArray<ACharacter*> localCharacters;
+		int32 minIndex;
+		float minValue;
+		local_CharacterQueue.GenerateValueArray(localFloats);
+		local_CharacterQueue.GenerateKeyArray(localCharacters);
+		UKismetMathLibrary::MinOfFloatArray(localFloats, minIndex, minValue);
+		local_SortedCharacters.Add(localCharacters[minIndex]);
+		local_CharacterQueue.Remove(localCharacters[minIndex]);
+	}
+	//检查接口是否可用，若可用，则调用方法，获取行动值最小的角色对应的行动值（用接口）
+	if (local_SortedCharacters[0] == nullptr) return;
+	ICombatInterface* tempInterface1 = Cast<ICombatInterface>(local_SortedCharacters[0]);
+	if (tempInterface1 == nullptr) return;
+	tempInterface1->Int_GetActionValue(local_WinnerActionVal);
+
+	// 更新其余的角色行动值
+	for (auto ArrayElem : local_SortedCharacters)
+	{
+		ICombatInterface* tempInterface2 = Cast<ICombatInterface>(ArrayElem);
+		if (tempInterface2 == nullptr) return;
+		tempInterface2->Int_UpdateActionValue(local_WinnerActionVal);
+	}
+
+	//更新UI执行顺序 隐藏锁定图标
+	BattleLayOut->RefreshActionOrder(local_SortedCharacters);
+
+	for (auto ArrElement : enemiesRefArr)
+	{
+		ArrElement->UpdateLockIcon(true);
+	}
+
+	//检查战斗是否结束
 }
 
 void UTBG_BattleManager::LoadBattleUI()

@@ -4,26 +4,35 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Interface/CombatInterface.h"
 #include "TBG_CharacterBase_Battle.generated.h"
 
 UCLASS()
-class TBG_API ATBG_CharacterBase_Battle : public ACharacter
+class TBG_API ATBG_CharacterBase_Battle : public ACharacter,public ICombatInterface
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ATBG_CharacterBase_Battle();
+	bool bDead = false;
+	bool bStun = false;
+	float ActionValue = 0.f;
+	float Distance = 10000.f;
+
+
+	bool bPlayerFaction = false;
+	float actionValue = 0.f;
+	UTexture2D* AvatarIcon;
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	virtual void Int_GetActionValue(float& actionVal) override;
+	virtual void Int_UpdateActionValue(float winnerVal) override;
+	virtual void Int_RefreshActionValueBySpeed() override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	UFUNCTION(BlueprintCallable)
+	void GetFactionAVAvartar(bool& bPF, float &aV, UTexture2D* &AI);
 };

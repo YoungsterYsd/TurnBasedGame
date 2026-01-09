@@ -25,10 +25,27 @@ void ATBG_CharacterBase_Battle::Tick(float DeltaTime)
 
 }
 
-// Called to bind functionality to input
-void ATBG_CharacterBase_Battle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ATBG_CharacterBase_Battle::Int_GetActionValue(float& actionVal)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
+	actionVal = ActionValue;
 }
+
+void ATBG_CharacterBase_Battle::Int_UpdateActionValue(float winnerVal)
+{
+	//所有角色行动值减去当前行动速度最快的行动值
+	ActionValue -= winnerVal;
+}
+
+void ATBG_CharacterBase_Battle::Int_RefreshActionValueBySpeed()
+{
+	//子类覆盖使用
+}
+
+void ATBG_CharacterBase_Battle::GetFactionAVAvartar(bool &bPF, float &aV, UTexture2D* &AI)
+{
+	bPF = bPlayerFaction;
+	aV = actionValue;
+	AI = AvatarIcon;
+}
+
 

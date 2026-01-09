@@ -17,5 +17,7 @@ class TBG_API UBattleLayOut : public UUserWidget
 public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void ConstructDeferred(UTBG_BattleManager* BM);
-	
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void RefreshActionOrder(const TArray<ACharacter*> &CharRefs);
 };

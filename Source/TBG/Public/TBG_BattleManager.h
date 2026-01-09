@@ -31,14 +31,20 @@ public:
 	void InitBattle(ATBG_Character_ExploreEnemies* EnemyRef, ATBG_Character_ExplorePlayer* PlayerRef);
 	
 	void PreInitializeBattle();
-	void ChangeCameraAndStopMovement();
+	void PostInitialzeBattle();
 
+	//A1
+	void ChangeCameraAndStopMovement();
 	ACameraActor* RetrieveCamera(FName tag);
 	void InitSpawnPostion();
 	void RetrieveEnemyPosition(int32 PosIndex, FVector& TargetPos, float& yaw);
 	void RetrievePlayerPosition(int32 PosIndex, FVector& TargetPos, float& yaw);
 	void SpawnEnemiesAndDecideLocation();
 	void SpawnPlayerAndDecideLocation();
+
+	//B1
+	void CalculateActionValue();
+	
 
 protected:
 
@@ -48,6 +54,9 @@ public:
 	TSubclassOf<ATBG_BattlePawn> BattlePawnClass;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	TMap<int32, ATBG_CharacterBase_Battle*> TeamInstForUI;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	float EnemyDisplayTime = 0.2f;
 
 	UBattleLayOut* BattleLayOut;
 	void LoadBattleUI();
@@ -68,7 +77,10 @@ public:
 	TArray<AActor*> playerSpawnPointsArr;
 
 	ATBG_BattlePawn* BattlePawn;
+	FTimerHandle DisplayEnemyTimeHandle;
+
 private:
 	//TOdo 需要在返回普通状态时，将是否boss战变量置为false
 	bool bBOSSFight = false;
+	TArray<ACharacter*> local_SortedCharacters;
 };
