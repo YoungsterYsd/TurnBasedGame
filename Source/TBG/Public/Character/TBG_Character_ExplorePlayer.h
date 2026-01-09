@@ -37,6 +37,7 @@ public:
 	//记录我方站位和敌人信息
 	UPROPERTY(EditDefaultsOnly, Category = "Presets")
 	TMap<int32, TSubclassOf<ATBG_Character_BattlePlayer>> PlayerTeamInfo;
+
 protected:
 	virtual void BeginPlay() override;
 

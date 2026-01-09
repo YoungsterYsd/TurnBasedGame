@@ -32,6 +32,7 @@ public:
 	UWidgetComponent* MarkedIcon;
 
 	virtual void Int_RefreshActionValueBySpeed() override;
+	EAttackType attackType{ EAttackType::AT_NormalATK };//Ä¬ÈÏÆÕÍ¨¹¥»÷
 protected:
 	virtual void BeginPlay() override;
 };

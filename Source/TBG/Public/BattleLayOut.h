@@ -9,14 +9,14 @@
 /**
  * 
  */
-class UTBG_BattleManager;
+class ATBG_BattleManager;
 UCLASS()
 class TBG_API UBattleLayOut : public UUserWidget
 {
 	GENERATED_BODY()
 public:
 	UFUNCTION(BlueprintImplementableEvent)
-	void ConstructDeferred(UTBG_BattleManager* BM);
+	void ConstructDeferred(ATBG_BattleManager* BM);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void RefreshActionOrder(const TArray<ACharacter*> &CharRefs);

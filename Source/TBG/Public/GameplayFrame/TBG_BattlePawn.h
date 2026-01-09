@@ -18,6 +18,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TryNormalATK();
 	ATBG_PlayerControllerBase* PC = nullptr;
+	UFUNCTION(BlueprintCallable)
+	void TrySwitchingEnemyLockIcon(bool bNext);
 protected:
 
 	virtual void BeginPlay() override;

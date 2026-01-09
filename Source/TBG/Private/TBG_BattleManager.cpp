@@ -16,17 +16,7 @@
 #include "Interface/CombatInterface.h"
 #include "Kismet\KismetMathLibrary.h"
 
-void UTBG_BattleManager::Initialize(FSubsystemCollectionBase& Collection)
-{
-	Super::Initialize(Collection);
-}
-
-void UTBG_BattleManager::Deinitialize()
-{
-	Super::Deinitialize();
-}
-
-void UTBG_BattleManager::InitBattle(ATBG_Character_ExploreEnemies* InEnemyRef, ATBG_Character_ExplorePlayer* InPlayerRef)
+void ATBG_BattleManager::InitBattle(ATBG_Character_ExploreEnemies* InEnemyRef, ATBG_Character_ExplorePlayer* InPlayerRef)
 {
 	ExploreEnemyRef = InEnemyRef;
 	ExplorePlayerRef = InPlayerRef;
@@ -36,11 +26,11 @@ void UTBG_BattleManager::InitBattle(ATBG_Character_ExploreEnemies* InEnemyRef, A
 	//初始化战场
 	PreInitializeBattle();
 	//展示敌人阵容的时间
-	GetWorld()->GetTimerManager().SetTimer(DisplayEnemyTimeHandle, this,&UTBG_BattleManager::PostInitialzeBattle,EnemyDisplayTime,false);
+	GetWorld()->GetTimerManager().SetTimer(DisplayEnemyTimeHandle, this,&ATBG_BattleManager::PostInitialzeBattle,EnemyDisplayTime,false);
 
 }
 
-void UTBG_BattleManager::PreInitializeBattle()
+void ATBG_BattleManager::PreInitializeBattle()
 {
 
 	//改变战斗阶段
@@ -65,7 +55,7 @@ void UTBG_BattleManager::PreInitializeBattle()
 	// TBD - 进入B1b阶段，计算行动值
 }
 
-void UTBG_BattleManager::PostInitialzeBattle()
+void ATBG_BattleManager::PostInitialzeBattle()
 {
 	//改变阶段
 	ProgressPhase = EProgressPhase::PP_B1_CalculateActionValue;
@@ -75,22 +65,27 @@ void UTBG_BattleManager::PostInitialzeBattle()
 	CalculateActionValue();
 }
 
-void UTBG_BattleManager::BattleEnd(EBattleFlags endResult)
+void ATBG_BattleManager::BattleEnd(EBattleFlags endResult)
 {
 	//胜利则退出战斗状态，回到探索，若失败，则退出游戏
 }
 
-void UTBG_BattleManager::HandlePlayerAttack(ATBG_Character_BattlePlayer* InPlayer)
+void ATBG_BattleManager::HandlePlayerAttack(ATBG_Character_BattlePlayer* InPlayer)
 {
-	GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("player!"));
+	//GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("player!"));
+	ProgressPhase = EProgressPhase::PP_B2a_PlayerActionTime;
+	ActivePlayer = InPlayer;
+	//TBD 更新UI 切换镜头
 }
 
-void UTBG_BattleManager::HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy)
+void ATBG_BattleManager::HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy)
 {
-	GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("Enemy!"));
+	//GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("Enemy!"));
+	ProgressPhase = EProgressPhase::PP_B2b_EnemyActionTime;
+	ActiveEnemy = InEnemy;
 }
 
-void UTBG_BattleManager::ChangeCameraAndStopMovement()
+void ATBG_BattleManager::ChangeCameraAndStopMovement()
 {
 	// 生成Battle Pawn，控制它并使用在其中定义的按键
 	BattlePawn = Cast<ATBG_BattlePawn>(
@@ -121,7 +116,7 @@ void UTBG_BattleManager::ChangeCameraAndStopMovement()
 	PC->SetViewTargetWithBlend(targetCA);
 
 }
-ACameraActor* UTBG_BattleManager::RetrieveCamera(FName tag)
+ACameraActor* ATBG_BattleManager::RetrieveCamera(FName tag)
 {
 	// 根据标签寻找对应摄像机
 	for (auto ArrayElem : camerasArr)
@@ -135,7 +130,7 @@ ACameraActor* UTBG_BattleManager::RetrieveCamera(FName tag)
 	return nullptr;
 }
 
-void UTBG_BattleManager::InitSpawnPostion()
+void ATBG_BattleManager::InitSpawnPostion()
 {
 	//生成battlePawn，使用其中自定义的按键
 	TArray<AActor*> tempActors;
@@ -169,7 +164,7 @@ void UTBG_BattleManager::InitSpawnPostion()
 	}	
 }
 
-void UTBG_BattleManager::RetrieveEnemyPosition(int32 PosIndex, FVector& TargetPos, float& yaw)
+void ATBG_BattleManager::RetrieveEnemyPosition(int32 PosIndex, FVector& TargetPos, float& yaw)
 {
 
 	for (auto ArrayElem : enemySpawnPointsArr)
@@ -188,7 +183,7 @@ void UTBG_BattleManager::RetrieveEnemyPosition(int32 PosIndex, FVector& TargetPo
 	yaw = 0.0f;
 	return;
 }
-void UTBG_BattleManager::RetrievePlayerPosition(int32 PosIndex, FVector& TargetPos, float& yaw)
+void ATBG_BattleManager::RetrievePlayerPosition(int32 PosIndex, FVector& TargetPos, float& yaw)
 {
 
 	for (auto ArrayElem : playerSpawnPointsArr)
@@ -207,7 +202,7 @@ void UTBG_BattleManager::RetrievePlayerPosition(int32 PosIndex, FVector& TargetP
 	yaw = 0.0f;
 	return;
 }
-void UTBG_BattleManager::SpawnEnemiesAndDecideLocation()
+void ATBG_BattleManager::SpawnEnemiesAndDecideLocation()
 {
 	for (auto It = EnemyTeamInfo.CreateConstIterator(); It; ++It)
 	{
@@ -226,7 +221,7 @@ void UTBG_BattleManager::SpawnEnemiesAndDecideLocation()
 		// TBD - 绑定敌人被击败后的回调
 	}
 }
-void UTBG_BattleManager::SpawnPlayerAndDecideLocation()
+void ATBG_BattleManager::SpawnPlayerAndDecideLocation()
 {
 	TeamInstForUI.Empty();
 	for (auto It = PlayerTeamInfo.CreateConstIterator(); It; ++It)
@@ -259,7 +254,7 @@ void UTBG_BattleManager::SpawnPlayerAndDecideLocation()
 	}
 }
 
-void UTBG_BattleManager::CalculateActionValue()
+void ATBG_BattleManager::CalculateActionValue()
 {
 
 	//定义排序相关本地变量
@@ -385,19 +380,81 @@ void UTBG_BattleManager::CalculateActionValue()
 	}
 }
 
-EBattleFlags UTBG_BattleManager::CheckGameOver(TMap<ATBG_Character_BattleEnemies*, float> eArr, TMap<ATBG_Character_BattlePlayer*, float> pArr)
+EBattleFlags ATBG_BattleManager::CheckGameOver(TMap<ATBG_Character_BattleEnemies*, float> eArr, TMap<ATBG_Character_BattlePlayer*, float> pArr)
 {
 	if (eArr.Num() == 0)return EBattleFlags::BF_PlayerWin;
 	if (pArr.Num() == 0)return EBattleFlags::BF_PlayerWin;
 	return EBattleFlags::BF_ContinueBattle;
 }
 
-void UTBG_BattleManager::LoadBattleUI() 
+void ATBG_BattleManager::SwitchEnemyLockIcon(bool bNext)
 {
-	if (ExplorePlayerRef != nullptr)
+	//我方行动回合外，直接跳出
+	if (ProgressPhase != EProgressPhase::PP_B2a_PlayerActionTime)return;
+	//TBD 复活技能处理
+	//根据按键查找对应敌人的Key值
+	if (bNext)
 	{
-		ATBG_PlayerControllerBase* PC = ExplorePlayerRef->GetTBGPlayerController();
-		PC->LoadBattleUI(this);
-		BattleLayOut = PC->BattleLayOut;
+		if ((indexForLockedTarget + 1) < enemiesRefArr.Num())
+		{
+			indexForLockedTarget += 1;
+		}
+		else
+		{
+			indexForLockedTarget = 0;
+		}
+	}
+	else
+	{
+		if (indexForLockedTarget < 0 )
+		{
+			indexForLockedTarget = enemiesRefArr.Num() - 1;
+		}
+		else
+		{
+			indexForLockedTarget -= 1; 
+		}
+	}
+	//TBD是否释放复活魔法
+	//TBD是否释放增益模式
+	//设置敌人锁定目标
+	SetMultipleEnemyLoacks();
+}
+
+void ATBG_BattleManager::SetMultipleEnemyLoacks()
+{
+	//是否范围攻击
+	if (IsMutipleTargets())
+	{
+		GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("attack all!"));
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("attack single!"));
+	}
+}
+
+bool ATBG_BattleManager::IsMutipleTargets()
+{
+	if (!ActivePlayer) return false;
+	bool result =*(ActivePlayer->playerAtr.MultipleTargets.Find(ActivePlayer->attackType));
+	return false;
+}
+
+void ATBG_BattleManager::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+void ATBG_BattleManager::LoadBattleUI() 
+{
+	if (BattleLayoutClassRef)
+	{
+		BattleLayOut = CreateWidget<UBattleLayOut>(GetWorld(), BattleLayoutClassRef);
+		if (BattleLayOut)
+		{
+			BattleLayOut->ConstructDeferred(this);
+			BattleLayOut->AddToViewport();
+		}
 	}
 }

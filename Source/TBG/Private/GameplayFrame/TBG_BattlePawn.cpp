@@ -2,7 +2,8 @@
 
 
 #include "GameplayFrame/TBG_BattlePawn.h"
-
+#include "Utilities/CF_SR.h"
+#include "TBG_BattleManager.h"
 #include "GameplayFrame/TBG_PlayerControllerBase.h"
 
 
@@ -15,6 +16,11 @@ ATBG_BattlePawn::ATBG_BattlePawn()
 void ATBG_BattlePawn::TryNormalATK()
 {
 	//todo ÆÕÍ¨¹¥»÷
+}
+
+void ATBG_BattlePawn::TrySwitchingEnemyLockIcon(bool bNext)
+{
+	UCF_SR::Flib_GetBM()->SwitchEnemyLockIcon(bNext);
 }
 
 

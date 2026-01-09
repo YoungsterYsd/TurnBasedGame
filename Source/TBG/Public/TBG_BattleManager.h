@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "TBG_ES.h"
-#include "Subsystems/GameInstanceSubsystem.h"
+#include "GameFramework/Actor.h"
 #include "TBG_BattleManager.generated.h"
 
 /**
  * 
  */
- //参考教程使用自定义单例进行制作，但UE提供更便捷的Subsystem系统，更换实现方式。
+ //参考教程使用自定义单例进行制作，更换实现方式。
 class ATBG_Character_ExploreEnemies;
 class ATBG_Character_ExplorePlayer;
 class ATBG_Character_BattlePlayer;
@@ -20,14 +20,11 @@ class ACameraActor;
 class ATBG_CharacterBase_Battle;
 class UBattleLayOut;
 class UUserWidget;
-UCLASS(Blueprintable)
-class TBG_API UTBG_BattleManager : public UGameInstanceSubsystem
+UCLASS(Blueprintable,BlueprintType)
+class TBG_API ATBG_BattleManager : public AActor
 {
 	GENERATED_BODY()
 public:
-	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }
-	virtual void Initialize(FSubsystemCollectionBase& Collection)override;
-	virtual void Deinitialize()override;
 	void InitBattle(ATBG_Character_ExploreEnemies* EnemyRef, ATBG_Character_ExplorePlayer* PlayerRef);
 	
 	void PreInitializeBattle();
@@ -49,12 +46,21 @@ public:
 	void CalculateActionValue();
 	EBattleFlags CheckGameOver(TMap<ATBG_Character_BattleEnemies*,float> eArr, TMap<ATBG_Character_BattlePlayer*, float> pArr);
 
-protected:
+	//我方攻击
+	void SwitchEnemyLockIcon(bool bNext);
+	void SetMultipleEnemyLoacks();
 
+	bool IsMutipleTargets();
+
+protected:
+	virtual void BeginPlay() override;
 	EProgressPhase ProgressPhase{ EProgressPhase::PP_EMAX}; 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	TSubclassOf<ATBG_BattlePawn> BattlePawnClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	TSubclassOf<UUserWidget> BattleLayoutClassRef;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	TMap<int32, ATBG_CharacterBase_Battle*> TeamInstForUI;
 
@@ -82,6 +88,10 @@ public:
 	ATBG_BattlePawn* BattlePawn;
 	FTimerHandle DisplayEnemyTimeHandle;
 
+	ATBG_Character_BattleEnemies* ActiveEnemy;
+	ATBG_Character_BattlePlayer* ActivePlayer;
+
+	int indexForLockedTarget = 2;//初始选中间的敌人
 private:
 	//TOdo 需要在返回普通状态时，将是否boss战变量置为false
 	bool bBOSSFight = false;
