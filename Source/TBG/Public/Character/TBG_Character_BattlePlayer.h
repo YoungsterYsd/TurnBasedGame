@@ -15,6 +15,7 @@ class 	UWidgetComponent;
 struct	FPlayerCharAttributes;
 class	UCurveFloat;
 struct	FTimeline;
+class	USpringArmComponent;
 UCLASS()
 class TBG_API ATBG_Character_BattlePlayer : public ATBG_CharacterBase_Battle
 {
@@ -38,6 +39,9 @@ public:
 	virtual void Int_RefreshActionValueBySpeed() override;
 	void InitializeCharData();
 	void PlayAnimationAndTimeline();
+	void SetHiddenForPlayer(bool bCustomHidden);
+	float PlaySpecifiedAnim(FString str);
+
 	UFUNCTION()
 	void TL_RotateToTarget(float deltaTime);
 
@@ -66,4 +70,5 @@ public:
 	FVector		targetLocation;
 
 	TArray<AActor*> currentTargets;
+	FORCEINLINE USpringArmComponent* GetCameraBoom() { return CameraBoom; }
 };

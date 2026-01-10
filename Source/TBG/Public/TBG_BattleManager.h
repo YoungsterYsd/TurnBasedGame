@@ -69,6 +69,7 @@ public:
 	void DisplayLockedIconsAndSetTargets();
 	void UpdatePlayerLockedIconToMultiple();
 	void UpdateEnemyLockedIconToMultiple();
+	void SwitchAndHideOtherPlayerChars(bool bHideOther,ATBG_Character_BattlePlayer* activePlayer);
 
 	//ActionAttck
 	void ExecuteAction(EAttackType ATKType);
@@ -129,7 +130,11 @@ public:
 	AActor* lastClickedActor;
 	int32 indexForLockedTarget = 2;
 	int32 skillPoints = 2;//初始技能点，普工增加
-private:
+
 	//TOdo 需要在返回普通状态时，将是否boss战变量置为false
 	bool bBOSSFight = false;
+
+	FString normalCA = "tag_c_start_normal";
+	FString fixedCA = "tag_c_boss";
+	FString buffCA = "tag_c_buff";
 };

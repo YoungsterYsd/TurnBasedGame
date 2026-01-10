@@ -16,6 +16,8 @@
 #include "Interface/CombatInterface.h"
 #include "Kismet\KismetMathLibrary.h"
 #include "Interface/AnimInterface.h"
+#include "Utilities/CF_SR.h"
+#include "Utilities/GameInst_SR.h"
 
 void ATBG_BattleManager::InitBattle(ATBG_Character_ExploreEnemies* InEnemyRef, ATBG_Character_ExplorePlayer* InPlayerRef)
 {
@@ -28,7 +30,6 @@ void ATBG_BattleManager::InitBattle(ATBG_Character_ExploreEnemies* InEnemyRef, A
 	PreInitializeBattle();
 	//展示敌人阵容的时间
 	GetWorld()->GetTimerManager().SetTimer(DisplayEnemyTimeHandle, this,&ATBG_BattleManager::PostInitialzeBattle,EnemyDisplayTime,false);
-
 }
 
 void ATBG_BattleManager::PreInitializeBattle()
@@ -78,7 +79,20 @@ void ATBG_BattleManager::HandlePlayerAttack(ATBG_Character_BattlePlayer* InPlaye
 	ActivePlayer = InPlayer;
 	//临时处理
 	DisplayLockedIconsAndSetTargets();
-	//TBD 更新UI 切换镜头
+	//更新UI 
+	if (!ActivePlayer)return;
+	BattleLayOut->SwitchATKMode(ActivePlayer->attackType);
+	if (bBOSSFight)
+	{
+		//固定视角就什么都不做
+	}
+	else
+	{
+		//可选择隐藏其他角色
+		SwitchAndHideOtherPlayerChars(true, ActivePlayer);
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->
+			SetViewTargetWithBlend(ActivePlayer);
+	}
 }
 
 void ATBG_BattleManager::HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy)
@@ -101,8 +115,7 @@ void ATBG_BattleManager::ChangeCameraAndStopMovement()
 
 	// 改变摄像机视角
 	ACameraActor* targetCA;
-	FString normalCA = "tag_c_start_normal";
-	FString fixedCA = "tag_c_boss";
+
 	if (bBOSSFight)
 	{
 		targetCA = RetrieveCamera(FName(*fixedCA));
@@ -731,6 +744,17 @@ void ATBG_BattleManager::UpdateEnemyLockedIconToMultiple()
 	if (!enemiesRefArr.IsValidIndex(indexForLockedTarget))return;
 	SetMultipleEnemyLocks();
 }
+void ATBG_BattleManager::SwitchAndHideOtherPlayerChars(bool bHideOther, ATBG_Character_BattlePlayer* activePlayer)
+{
+	//TBD_隐藏人物
+	TArray<ATBG_Character_BattlePlayer*> l_tempPlayers;
+	TeamInstForUI.GenerateValueArray(l_tempPlayers);
+	for (auto ArrElement : l_tempPlayers)
+	{
+		ArrElement->SetHiddenForPlayer(bHideOther);
+	}
+	activePlayer->SetHiddenForPlayer(false);
+}
 void ATBG_BattleManager::ExecuteAction(EAttackType ATKType)
 {
 	//根据传入变量执行不同的动作
@@ -832,15 +856,17 @@ void ATBG_BattleManager::HandlePlayerATK(EAttackType ATKType)
 		}
 		else
 		{
-			if (!currentPlayerTarget)return;
+
 			AActor* tempTargetActor;
 			bool l_bCousumTurn = (ATKType == EAttackType::AT_NormalATK || ATKType == EAttackType::AT_SkillATK);
 			if(IsBuffTarget())
 			{
+				if (!currentPlayerTarget)return;
 				tempTargetActor = currentPlayerTarget;
 			}
 			else 
 			{
+				if (!currentEnemyTarget)return;
 				tempTargetActor = currentEnemyTarget;
 			}
 			HideAllLockedIcons();
@@ -890,7 +916,28 @@ void ATBG_BattleManager::ExecuteUltimate()
 }
 void ATBG_BattleManager::CameraForBuffSelections()
 {
-
+	if (IsBuffTarget())
+	{
+		//释放增益魔法的逻辑,默认锁定自身
+		SwitchAndHideOtherPlayerChars(false, ActivePlayer);
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->
+			SetViewTargetWithBlend(RetrieveCamera(FName(*buffCA)));
+	}
+	else
+	{
+		if (bBOSSFight)
+		{
+			UGameplayStatics::GetPlayerController(GetWorld(), 0)->
+				SetViewTargetWithBlend(RetrieveCamera(FName(*fixedCA)));
+		}
+		else
+		{
+			//可选择隐藏其他角色
+			SwitchAndHideOtherPlayerChars(true, ActivePlayer);
+			UGameplayStatics::GetPlayerController(GetWorld(), 0)->
+				SetViewTargetWithBlend(ActivePlayer);
+		}
+	}
 }
 
 void ATBG_BattleManager::BeginPlay()

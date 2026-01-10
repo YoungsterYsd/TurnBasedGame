@@ -2,7 +2,13 @@
 
 
 #include "Character/TBG_Character_BattlePlayer.h"
+#include "Character\TBG_Character_BattleEnemies.h"
+#include "Kismet\KismetMathLibrary.h"
+#include "Utilities/CF_SR.h"
+#include "TBG_BattleManager.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ATBG_Character_BattlePlayer::ATBG_Character_BattlePlayer()
 {
@@ -46,13 +52,71 @@ void ATBG_Character_BattlePlayer::PlayAnimationAndTimeline()
 {
 	//播放转向目标的时间轴
 	RotateToTarget_TL.PlayFromStart();
+	//显示当前玩家角色。
+	SetHiddenForPlayer(false);
+	//是否近战
+	if (Melee)
+	{
+		//近战逻辑
+		//是否固定视角？
+		if (!UCF_SR::Flib_GetBM()->bBOSSFight)
+		{
+			//普通战切换视角
+			float l_blendTime = 0.6f;
+			if (attackType == EAttackType::AT_FollowTK)
+			{
+				l_blendTime = 0.f;
+			}
+			else
+			{
+				l_blendTime = 0.6f;
+			}
+			UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetViewTargetWithBlend(rotateToTarget, l_blendTime);
+		}
+		else
+		{
+			//boss战不切换视角
+		}
+		//播放指定的动画
+		PlaySpecifiedAnim("Slide_F");
+		//TBD 时间轴移动
+	}
+	else
+	{
+		//TBD 远程逻辑
+	}
+}
+
+void ATBG_Character_BattlePlayer::SetHiddenForPlayer(bool bCustomHidden)
+{
+	SetActorHiddenInGame(bCustomHidden);
+	//TBD如果套盾了 也要隐藏
+}
+
+float ATBG_Character_BattlePlayer::PlaySpecifiedAnim(FString str)
+{
+	float l_animTime = 0.f;
+	if (playerAtr.Montages.Contains(str))
+	{
+		l_animTime = PlayAnimMontage(*playerAtr.Montages.Find(str));
+	}
+	return l_animTime;
 }
 
 void ATBG_Character_BattlePlayer::TL_RotateToTarget(float deltaTime)
 {
 	//deltaTime 0-1 时间根据Curve而定
-	//FString str = FString::SanitizeFloat(deltaTime);
+
 	//玩家转向锁定的Irene方向
+	if (!rotateToTarget)return;
+	if (!Cast<ATBG_Character_BattleEnemies>(rotateToTarget))return;
+	{
+		FRotator l_TargetRot = (rotateToTarget->GetActorLocation() - GetActorLocation()).Rotation();
+		//最短路径
+		FRotator l_tempRot = UKismetMathLibrary::RLerp(OriginalRotation, l_TargetRot, deltaTime,true);
+		SetActorRotation(FRotator(0, l_tempRot.Yaw, 0));
+	}
+
 }
 
 void ATBG_Character_BattlePlayer::SingleATK(AActor* target, bool bCounsumeTurn, bool bMelee, EAttackType ATKType)
@@ -93,6 +157,29 @@ void ATBG_Character_BattlePlayer::BeginPlay()
 	playerAtr = *(PlayerCharsDT->FindRow<FPlayerCharAttributes>(DataRow, s, true));
 	//初始化数据
 	InitializeCharData();
+	//初始化镜头角度
+	float l_springArmYaw = 0.f; 
+	if (PositionID != -1)
+	{
+		switch (PositionID)
+		{
+			case 0 :
+				break;
+			case 1 :
+				l_springArmYaw = -60.f;
+				break;
+			case 2:
+				l_springArmYaw = -55.f;
+				break;
+			case 3:
+				l_springArmYaw = -45.f;
+				break;
+			case 4:
+				l_springArmYaw = -27.f;
+				break;
+		}
+	}
+	GetCameraBoom()->SetRelativeRotation(FRotator(0, l_springArmYaw, 0));
 
 	//初始化时间轴
 	if (Curve_RotateToTarget)
