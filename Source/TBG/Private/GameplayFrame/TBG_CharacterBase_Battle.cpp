@@ -11,7 +11,7 @@
 ATBG_CharacterBase_Battle::ATBG_CharacterBase_Battle()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("Camera Boom");
 	CameraBoom->SetupAttachment(RootComponent);
@@ -33,6 +33,11 @@ void ATBG_CharacterBase_Battle::BeginPlay()
 {
 	Super::BeginPlay();
 	
+}
+
+void ATBG_CharacterBase_Battle::Tick(float deltaTime)
+{
+	Super::Tick(deltaTime);
 }
 
 void ATBG_CharacterBase_Battle::Int_GetActionValue(float& actionVal)

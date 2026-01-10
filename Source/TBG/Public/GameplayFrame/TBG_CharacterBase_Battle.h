@@ -33,7 +33,7 @@ public:
 	TObjectPtr<UWidgetComponent> LockIcon;
 protected:
 	virtual void BeginPlay() override;
-
+	virtual void Tick(float deltaTime)override;
 public:	
 	virtual void Int_GetActionValue(float& actionVal) override;
 	virtual void Int_UpdateActionValue(float winnerVal) override;

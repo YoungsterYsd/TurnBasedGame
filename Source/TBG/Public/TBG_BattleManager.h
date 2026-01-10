@@ -108,6 +108,7 @@ public:
 
 	TArray<ATBG_Character_BattlePlayer*> playerRefArr;
 	TArray<ATBG_Character_BattlePlayer*> deadPlayerRefArr;
+	TArray<ATBG_Character_BattlePlayer*> ultimatePlayerQueue;
 
 	TArray<ACameraActor*> camerasArr;
 	TArray<AActor*> enemySpawnPointsArr;

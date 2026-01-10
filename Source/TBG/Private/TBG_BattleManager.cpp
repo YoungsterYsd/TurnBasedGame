@@ -881,6 +881,12 @@ void ATBG_BattleManager::HandlePlayerATK(EAttackType ATKType)
 
 void ATBG_BattleManager::ExecuteUltimate()
 {
+	//检查大招序列是否>0,且玩家回合
+	if (ProgressPhase == EProgressPhase::PP_B2a_PlayerActionTime && ultimatePlayerQueue.Num()>0)
+	{
+		HandlePlayerATK(EAttackType::AT_Ultimate);
+	}
+	//敌方回合，但玩家按下大招
 }
 void ATBG_BattleManager::CameraForBuffSelections()
 {
