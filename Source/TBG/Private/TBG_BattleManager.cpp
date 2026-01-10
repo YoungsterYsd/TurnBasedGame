@@ -15,6 +15,7 @@
 #include "BattleLayOut.h"
 #include "Interface/CombatInterface.h"
 #include "Kismet\KismetMathLibrary.h"
+#include "Interface/AnimInterface.h"
 
 void ATBG_BattleManager::InitBattle(ATBG_Character_ExploreEnemies* InEnemyRef, ATBG_Character_ExplorePlayer* InPlayerRef)
 {
@@ -446,7 +447,15 @@ void ATBG_BattleManager::SetMultipleEnemyLocks()
 bool ATBG_BattleManager::IsMutipleTargets()
 {
 	if (!ActivePlayer) return false;
-	bool result =*(ActivePlayer->playerAtr.MultipleTargets.Find(ActivePlayer->attackType));
+	bool result;
+	if (ActivePlayer->playerAtr.MultipleTargets.Contains(ActivePlayer->attackType))
+	{
+		result = *(ActivePlayer->playerAtr.MultipleTargets.Find(ActivePlayer->attackType));
+	}
+	else
+	{
+		return false;
+	}
 	return result;
 }
 
@@ -472,6 +481,21 @@ bool ATBG_BattleManager::IsBuffTarget()
 {
 	if (!ActivePlayer) return false;
 	bool result = ActivePlayer->playerAtr.BuffSkillStats.Contains(ActivePlayer->attackType);
+	return result;
+}
+
+bool ATBG_BattleManager::IsMeleeAction()
+{
+	if (!ActivePlayer) return true;
+	bool result;
+	if(ActivePlayer->playerAtr.MeleeAction.Contains(ActivePlayer->attackType))
+	{
+		result = *(ActivePlayer->playerAtr.MeleeAction.Find(ActivePlayer->attackType));
+	}
+	else
+	{
+		return true;
+	}
 	return result;
 }
 
@@ -707,6 +731,162 @@ void ATBG_BattleManager::UpdateEnemyLockedIconToMultiple()
 	if (!enemiesRefArr.IsValidIndex(indexForLockedTarget))return;
 	SetMultipleEnemyLocks();
 }
+void ATBG_BattleManager::ExecuteAction(EAttackType ATKType)
+{
+	//根据传入变量执行不同的动作
+	if (!ActivePlayer)return;
+	switch (ATKType)
+	{
+		{
+	case EAttackType::AT_EMAX:
+		break;
+	case EAttackType::AT_NormalATK:
+		if (ProgressPhase == EProgressPhase::PP_B2a_PlayerActionTime &&
+			ActivePlayer->attackType != EAttackType::AT_Ultimate)
+		{
+			HandlePlayerATK(EAttackType::AT_NormalATK);
+		}
+		break;
+	case EAttackType::AT_SkillATK:
+		if (ProgressPhase == EProgressPhase::PP_B2a_PlayerActionTime &&
+			ActivePlayer->attackType != EAttackType::AT_Ultimate)
+		{
+			HandlePlayerATK(EAttackType::AT_SkillATK);
+		}
+		break;
+	case EAttackType::AT_FollowTK:
+		break;
+	case EAttackType::AT_Ultimate:
+		ExecuteUltimate();
+		break;
+	case EAttackType::AT_DelayATK_E:
+		break;
+	default:
+		break;
+		}
+	}
+}
+
+
+void ATBG_BattleManager::HandlePlayerATK(EAttackType ATKType)
+{
+	if (!ActivePlayer)return;
+	if (ATKType == EAttackType::AT_SkillATK)
+	{
+		if (skillPoints <= 0)
+		{
+			//播放技能失败声效
+			UGameplayStatics::SpawnSound2D(GetWorld(), UnableSFX);
+		}
+	}
+	//状态和输入不同则改变攻击方式并更新目标显示 
+	if (ActivePlayer->attackType != ATKType)
+	{
+		ActivePlayer->attackType = ATKType;
+		DisplayLockedIconsAndSetTargets();
+		//判定是否切换镜头
+		CameraForBuffSelections();
+		//更改UI高亮状态 
+		BattleLayOut->SwitchATKMode(ATKType);
+	}
+	else
+	{
+		if (ATKType == EAttackType::AT_Ultimate)
+		{
+			if (IAnimInterface* tempInterface = Cast<IAnimInterface>(ActivePlayer->GetMesh()->GetAnimInstance()))
+			{
+				tempInterface->Int_SetUltimateReadeVFX(false);
+			}
+		}
+		// 根据技能配置的目标阵营和涉及数量，修改目标的数量、敌我方
+		if (IsMutipleTargets())
+		{
+
+			bool l_bCousumTurn = (ATKType == EAttackType::AT_NormalATK || ATKType == EAttackType::AT_SkillATK);
+
+			if (IsBuffTarget())
+			{
+				if (!currentPlayerTargets.IsValidIndex(0))return;
+				if (!currentPlayerTargets[0])return;
+		
+				HideAllLockedIcons();
+				ProgressPhase = EProgressPhase::PP_B2c_Animating;
+
+				//父类数组无法存放子类数组，需要将子类数组传入用于构建。
+				TArray<AActor*> l_tempTargets(currentPlayerTargets);
+				ActivePlayer->MultipleATK(l_tempTargets, l_bCousumTurn, IsMeleeAction(), ATKType);
+			}
+			else
+			{
+				if (!currentEnemyTargets.IsValidIndex(0))return;
+				if (!currentEnemyTargets[0])return;
+
+				HideAllLockedIcons();
+				ProgressPhase = EProgressPhase::PP_B2c_Animating;
+
+				//父类数组无法存放子类数组，需要将子类数组传入用于构建。
+				TArray<AActor*> l_tempTargets(currentEnemyTargets);
+				ActivePlayer->MultipleATK(l_tempTargets, l_bCousumTurn, IsMeleeAction(), ATKType);
+			}
+	
+		}
+		else
+		{
+			if (!currentPlayerTarget)return;
+			AActor* tempTargetActor;
+			bool l_bCousumTurn = (ATKType == EAttackType::AT_NormalATK || ATKType == EAttackType::AT_SkillATK);
+			if(IsBuffTarget())
+			{
+				tempTargetActor = currentPlayerTarget;
+			}
+			else 
+			{
+				tempTargetActor = currentEnemyTarget;
+			}
+			HideAllLockedIcons();
+			ProgressPhase = EProgressPhase::PP_B2c_Animating;
+
+			ActivePlayer->SingleATK(tempTargetActor, l_bCousumTurn, IsMeleeAction(),ATKType);
+		}
+
+		//根据攻击类型的不同，增加/减少技能点。
+		int32 l_skillPoints = skillPoints + 0;
+		int32 l_skillPointDelta = 0;
+		switch (ATKType)
+		{
+			case EAttackType::AT_EMAX:
+				break;
+			case EAttackType::AT_NormalATK:
+				l_skillPointDelta = 1;
+				break;
+			case EAttackType::AT_SkillATK:
+				l_skillPointDelta = -1;
+				break;
+			case EAttackType::AT_FollowTK:
+				break;
+			case EAttackType::AT_Ultimate:
+				break;
+			case EAttackType::AT_DelayATK_E:
+				break;
+			default:
+				break;
+		}
+		skillPoints = UKismetMathLibrary::Clamp(l_skillPoints + l_skillPointDelta, 0, 5);
+	}
+	//UI文本提示
+	BattleLayOut->HandlePhaseHintFromCpp(ActivePlayer, ATKType);
+	//战斗状态下隐藏其他界面
+	BattleLayOut->HideATKButtons();
+}
+
+void ATBG_BattleManager::ExecuteUltimate()
+{
+}
+void ATBG_BattleManager::CameraForBuffSelections()
+{
+
+}
+
 void ATBG_BattleManager::BeginPlay()
 {
 	Super::BeginPlay();

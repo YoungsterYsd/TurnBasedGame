@@ -20,6 +20,7 @@ class ACameraActor;
 class ATBG_CharacterBase_Battle;
 class UBattleLayOut;
 class UUserWidget;
+class USoundBase;
 UCLASS(Blueprintable,BlueprintType)
 class TBG_API ATBG_BattleManager : public AActor
 {
@@ -54,6 +55,7 @@ public:
 	bool IsMutipleTargets();
 	bool NotResurrectSkill();
 	bool IsBuffTarget();
+	bool IsMeleeAction();
 
 	//Locks
 	void ShowEnemyLockIconByIndex(int32 Index);
@@ -67,6 +69,14 @@ public:
 	void DisplayLockedIconsAndSetTargets();
 	void UpdatePlayerLockedIconToMultiple();
 	void UpdateEnemyLockedIconToMultiple();
+
+	//ActionAttck
+	void ExecuteAction(EAttackType ATKType);
+	void HandlePlayerATK(EAttackType ATKType);
+	void ExecuteUltimate();
+
+	//Camera
+	void CameraForBuffSelections();
 protected:
 	virtual void BeginPlay() override;
 	EProgressPhase ProgressPhase{ EProgressPhase::PP_EMAX}; 
@@ -81,6 +91,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	float EnemyDisplayTime = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	USoundBase* UnableSFX;
 
 	UBattleLayOut* BattleLayOut;
 	void LoadBattleUI();
@@ -114,6 +127,7 @@ public:
 	//鼠标点击用
 	AActor* lastClickedActor;
 	int32 indexForLockedTarget = 2;
+	int32 skillPoints = 2;//初始技能点，普工增加
 private:
 	//TOdo 需要在返回普通状态时，将是否boss战变量置为false
 	bool bBOSSFight = false;

@@ -16,7 +16,7 @@ public:
 	
 	ATBG_BattlePawn();
 	UFUNCTION(BlueprintCallable)
-	void TryNormalATK();
+	void TryAction(EAttackType ATKType);
 	ATBG_PlayerControllerBase* PC = nullptr;
 	UFUNCTION(BlueprintCallable)
 	void TrySwitchingEnemyLockIcon(bool bNext);

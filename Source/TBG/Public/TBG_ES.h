@@ -98,7 +98,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float UltimateRatio = 0.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Enegy = 0.f;
+	float Energy = 0.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USkeletalMesh* SKM = nullptr;
 

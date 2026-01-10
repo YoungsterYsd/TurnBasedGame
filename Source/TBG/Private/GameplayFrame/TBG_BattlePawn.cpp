@@ -13,9 +13,9 @@ ATBG_BattlePawn::ATBG_BattlePawn()
 
 }
 
-void ATBG_BattlePawn::TryNormalATK()
+void ATBG_BattlePawn::TryAction(EAttackType ATKType)
 {
-	//todo ÆÕÍ¨¹¥»÷
+	UCF_SR::Flib_GetBM()->ExecuteAction(ATKType);
 }
 
 void ATBG_BattlePawn::TrySwitchingEnemyLockIcon(bool bNext)

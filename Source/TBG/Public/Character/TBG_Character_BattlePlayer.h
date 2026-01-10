@@ -32,9 +32,20 @@ public:
 	UWidgetComponent* MarkedIcon;
 
 	void UpdateLockIcon(bool bHide);
-
 	virtual void Int_RefreshActionValueBySpeed() override;
-	EAttackType attackType{ EAttackType::AT_NormalATK };//Ä¬ÈÏÆÕÍ¨¹¥»÷
+	void InitializeCharData();
+
+	void SingleATK(AActor* target,bool bCounsumeTurn,bool bMelee,EAttackType ATKType);
+	void MultipleATK(TArray<AActor*> targets, bool bCounsumeTurn, bool bMelee, EAttackType ATKType);
 protected:
 	virtual void BeginPlay() override;
+public:
+	EAttackType attackType{ EAttackType::AT_NormalATK };//Ä¬ÈÏÆÕÍ¨¹¥»÷
+	float maxHP;
+	float curHP;
+	float maxEnergy;
+	float curEnergy;
+	FVector OringinalLocation;
+	FRotator OriginalRotation;
+
 };

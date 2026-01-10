@@ -24,4 +24,12 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void HandleStatsPanelAnimating(ATBG_Character_BattlePlayer* playerRef,bool bIncrease);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void SwitchATKMode(EAttackType ATKType);
+	UFUNCTION(BlueprintImplementableEvent)
+	void HandlePhaseHintFromCpp(ATBG_Character_BattlePlayer* playerRef, EAttackType ATKType);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void HideATKButtons();
 };
