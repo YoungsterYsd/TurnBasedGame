@@ -31,6 +31,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	UWidgetComponent* MarkedIcon;
 
+	void UpdateLockIcon(bool bHide);
+
 	virtual void Int_RefreshActionValueBySpeed() override;
 	EAttackType attackType{ EAttackType::AT_NormalATK };//Ä¬ÈÏÆÕÍ¨¹¥»÷
 protected:

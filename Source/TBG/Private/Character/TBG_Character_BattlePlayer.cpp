@@ -11,6 +11,11 @@ ATBG_Character_BattlePlayer::ATBG_Character_BattlePlayer()
 	MarkedIcon->bHiddenInGame = true;
 }
 
+void ATBG_Character_BattlePlayer::UpdateLockIcon(bool bHide)
+{
+	MarkedIcon->bHiddenInGame = bHide;
+}
+
 void ATBG_Character_BattlePlayer::Int_RefreshActionValueBySpeed()
 {
 	ActionValue = Distance/ playerAtr.Speed;

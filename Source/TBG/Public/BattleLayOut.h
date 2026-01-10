@@ -10,6 +10,7 @@
  * 
  */
 class ATBG_BattleManager;
+class ATBG_Character_BattlePlayer;
 UCLASS()
 class TBG_API UBattleLayOut : public UUserWidget
 {
@@ -20,4 +21,7 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void RefreshActionOrder(const TArray<ACharacter*> &CharRefs);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void HandleStatsPanelAnimating(ATBG_Character_BattlePlayer* playerRef,bool bIncrease);
 };

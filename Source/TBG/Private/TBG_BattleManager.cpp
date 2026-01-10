@@ -76,7 +76,7 @@ void ATBG_BattleManager::HandlePlayerAttack(ATBG_Character_BattlePlayer* InPlaye
 	ProgressPhase = EProgressPhase::PP_B2a_PlayerActionTime;
 	ActivePlayer = InPlayer;
 	//临时处理
-	SetMultipleEnemyLocks();
+	DisplayLockedIconsAndSetTargets();
 	//TBD 更新UI 切换镜头
 }
 
@@ -438,7 +438,7 @@ void ATBG_BattleManager::SetMultipleEnemyLocks()
 	else//单体显示一个锁定
 	{
 		currentEnemyTarget = enemiesRefArr[indexForLockedTarget];
-		lastClickedEnemyActor = currentEnemyTarget;
+		lastClickedActor = currentEnemyTarget;
 		ShowEnemyLockIconByIndex(indexForLockedTarget);
 	}
 }
@@ -453,8 +453,18 @@ bool ATBG_BattleManager::IsMutipleTargets()
 bool ATBG_BattleManager::NotResurrectSkill()
 {
 	if (!ActivePlayer) return false;
-	FBuffInfo tempBuffType = *(ActivePlayer->playerAtr.BuffSkillStats.Find(ActivePlayer->attackType));
-	bool result = (tempBuffType.BuffType != EBuffTypes::BT_Resurrection);
+	bool result = false;
+	if (ActivePlayer->playerAtr.BuffSkillStats.Contains(ActivePlayer->attackType))
+	{
+		FBuffInfo tempBuffType = *(ActivePlayer->playerAtr.BuffSkillStats.Find(ActivePlayer->attackType));
+		result = (tempBuffType.BuffType != EBuffTypes::BT_Resurrection);
+	}
+	else
+	{
+		//未找到，则不是复活技能
+		result = true;
+	}
+
 	return result;
 }
 
@@ -489,6 +499,32 @@ void ATBG_BattleManager::ShowEnemyLockIconMultiple(TArray<ATBG_Character_BattleE
 		if (!ArrElement)return;
 		if (ArrElement->bDead)return;
 		ArrElement->UpdateLockIcon(false);
+	}
+}
+void ATBG_BattleManager::ShowPlayerLockIconByIndex(int32 Index)
+{
+	for (auto ArrElement : playerRefArr)
+	{
+		ArrElement->UpdateLockIcon(true);
+	}
+	//若有效，则开启锁定
+	if (playerRefArr[Index])
+	{
+		playerRefArr[Index]->UpdateLockIcon(false);
+	}
+}
+void ATBG_BattleManager::ShowPlayerLockIconMultiple(TArray<ATBG_Character_BattlePlayer*> InCurrentPlayerTargets)
+{
+	for (auto ArrElement : playerRefArr)
+	{
+		ArrElement->UpdateLockIcon(true);
+	}
+	for (auto ArrElement : InCurrentPlayerTargets)
+	{
+		if (ArrElement)
+		{
+			ArrElement->UpdateLockIcon(false);
+		}
 	}
 }
 
@@ -551,7 +587,7 @@ void ATBG_BattleManager::CalculateLockIndex(bool bNext)
 	}
 	else
 	{
-		SetDeadplayerLockedIcons();
+		SetDeadPlayerLockedIcons();
 	}
 
 	 
@@ -560,15 +596,117 @@ void ATBG_BattleManager::CalculateLockIndex(bool bNext)
 	SetMultipleEnemyLocks();
 }
 
-void ATBG_BattleManager::SetDeadplayerLockedIcons()
+void ATBG_BattleManager::SetDeadPlayerLockedIcons()
 {
+	if (!deadPlayerRefArr.IsValidIndex(indexForLockedTarget)) return;
+	//隐藏所有的锁定的图标
+	HideAllLockedIcons();
+	//锁定
+	currentPlayerTarget = deadPlayerRefArr[indexForLockedTarget];
+	lastClickedActor = currentPlayerTarget;
 
+	if (currentPlayerTarget)
+	{
+		currentPlayerTarget->UpdateLockIcon(false);
+	}
 }
 
 void ATBG_BattleManager::SetPlayerLockedIcons()
 {
+	if (IsMutipleTargets())
+	{
+		currentPlayerTargets = playerRefArr;
+		//向友方群体释放技能，显示锁定图标
+		ShowPlayerLockIconMultiple(currentPlayerTargets);
+	}
+	else
+	{
+		if (!playerRefArr.IsValidIndex(indexForLockedTarget))return;
+		currentPlayerTarget = playerRefArr[indexForLockedTarget];
+		lastClickedActor = currentPlayerTarget;
+		ShowPlayerLockIconByIndex(indexForLockedTarget);
+	}
 }
 
+void ATBG_BattleManager::HideAllLockedIcons()
+{
+	for (auto ArrElement : playerRefArr)
+	{
+		ArrElement->UpdateLockIcon(true);
+	} 
+	for (auto ArrElement : enemiesRefArr)
+	 {
+		ArrElement->UpdateLockIcon(true);
+	}
+	for (auto ArrElement : deadEnemyRefArr)
+	{
+		ArrElement->UpdateLockIcon(true);
+	}
+	for (auto ArrElement : deadPlayerRefArr)
+	{
+		ArrElement->UpdateLockIcon(true);
+	}
+}
+
+void ATBG_BattleManager:: DisplayLockedIconsAndSetTargets()
+{
+	// 隐藏所有锁定图标
+	HideAllLockedIcons();
+	// TBD - 播放面板动画
+	BattleLayOut->HandleStatsPanelAnimating(ActivePlayer,true);
+	// 是否切换到释放增益魔法时，选择玩家角色的视角
+	if (IsBuffTarget())
+	{
+		UpdatePlayerLockedIconToMultiple();
+	}
+	else
+	{
+		UpdateEnemyLockedIconToMultiple();
+	}
+}
+void ATBG_BattleManager::UpdatePlayerLockedIconToMultiple()
+{
+	if (NotResurrectSkill())
+	{
+		//锁定的目标锁到玩家中间
+		indexForLockedTarget = (playerRefArr.Num() - 1) / 2;
+		SetPlayerLockedIcons();
+	}
+	else
+	{
+		if (deadPlayerRefArr.Num() != 0)
+		{
+			indexForLockedTarget = (deadPlayerRefArr.Num() - 1) / 2;
+		}
+		else
+		{
+			//无目标
+			indexForLockedTarget = -1;
+		}
+		if (!deadPlayerRefArr.IsValidIndex(indexForLockedTarget))return;
+		if (deadPlayerRefArr[indexForLockedTarget])
+		{
+			deadPlayerRefArr[indexForLockedTarget]->UpdateLockIcon(false);
+		}
+	}
+}
+void ATBG_BattleManager::UpdateEnemyLockedIconToMultiple()
+{
+	TArray<ATBG_Character_BattleEnemies*> local_ValidEnemies;
+	//筛选敌人角色，防止大招插队造成导致的enemyarr未更新导致的无效角色选择
+	for (auto ArrElement : enemiesRefArr)
+	{
+		if (!ArrElement)return;
+
+		if (ArrElement->bDead)
+		{
+			local_ValidEnemies.Add(ArrElement);
+		}
+	}
+	indexForLockedTarget = (local_ValidEnemies.Num() - 1) / 2;
+	if (!enemiesRefArr.IsValidIndex(indexForLockedTarget))return;
+	SetMultipleEnemyLocks();
+}
 void ATBG_BattleManager::BeginPlay()
 {
 	Super::BeginPlay();

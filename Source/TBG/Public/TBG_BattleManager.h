@@ -58,9 +58,15 @@ public:
 	//Locks
 	void ShowEnemyLockIconByIndex(int32 Index);
 	void ShowEnemyLockIconMultiple(TArray<ATBG_Character_BattleEnemies*>  InCurrentEnemyTargets);
+	void ShowPlayerLockIconByIndex(int32 Index);
+	void ShowPlayerLockIconMultiple(TArray<ATBG_Character_BattlePlayer*>  InCurrentPlayerTargets);
 	void CalculateLockIndex(bool bNext);
-	void SetDeadplayerLockedIcons();
+	void SetDeadPlayerLockedIcons();
 	void SetPlayerLockedIcons();
+	void HideAllLockedIcons();
+	void DisplayLockedIconsAndSetTargets();
+	void UpdatePlayerLockedIconToMultiple();
+	void UpdateEnemyLockedIconToMultiple();
 protected:
 	virtual void BeginPlay() override;
 	EProgressPhase ProgressPhase{ EProgressPhase::PP_EMAX}; 
@@ -71,7 +77,7 @@ public:
 	TSubclassOf<UUserWidget> BattleLayoutClassRef;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
-	TMap<int32, ATBG_CharacterBase_Battle*> TeamInstForUI;
+	TMap<int32, ATBG_Character_BattlePlayer*> TeamInstForUI;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	float EnemyDisplayTime = 0.2f;
@@ -100,11 +106,13 @@ public:
 	ATBG_Character_BattleEnemies* ActiveEnemy;
 	ATBG_Character_BattlePlayer* ActivePlayer;
 
-	//选中的敌人相关
-	ATBG_Character_BattleEnemies* currentEnemyTarget; 
-	TArray<ATBG_Character_BattleEnemies*>  currentEnemyTargets;
+	//选中对象相关
+	ATBG_Character_BattleEnemies*			currentEnemyTarget; 
+	TArray<ATBG_Character_BattleEnemies*>	currentEnemyTargets;
+	ATBG_Character_BattlePlayer*			currentPlayerTarget;
+	TArray<ATBG_Character_BattlePlayer*>	currentPlayerTargets;
 	//鼠标点击用
-	AActor* lastClickedEnemyActor;
+	AActor* lastClickedActor;
 	int32 indexForLockedTarget = 2;
 private:
 	//TOdo 需要在返回普通状态时，将是否boss战变量置为false
