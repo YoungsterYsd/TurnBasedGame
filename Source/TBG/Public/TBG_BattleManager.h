@@ -48,11 +48,19 @@ public:
 
 	//我方攻击
 	void SwitchEnemyLockIcon(bool bNext);
-	void SetMultipleEnemyLoacks();
+	void SetMultipleEnemyLocks();
 
+	//Utilities
 	bool IsMutipleTargets();
-	void ShowEnemyLockIconByIndex(int32 Index);
+	bool NotResurrectSkill();
+	bool IsBuffTarget();
 
+	//Locks
+	void ShowEnemyLockIconByIndex(int32 Index);
+	void ShowEnemyLockIconMultiple(TArray<ATBG_Character_BattleEnemies*>  InCurrentEnemyTargets);
+	void CalculateLockIndex(bool bNext);
+	void SetDeadplayerLockedIcons();
+	void SetPlayerLockedIcons();
 protected:
 	virtual void BeginPlay() override;
 	EProgressPhase ProgressPhase{ EProgressPhase::PP_EMAX}; 
@@ -93,10 +101,11 @@ public:
 	ATBG_Character_BattlePlayer* ActivePlayer;
 
 	//选中的敌人相关
-	ATBG_Character_BattleEnemies* currentEnemyTarget;
+	ATBG_Character_BattleEnemies* currentEnemyTarget; 
+	TArray<ATBG_Character_BattleEnemies*>  currentEnemyTargets;
 	//鼠标点击用
 	AActor* lastClickedEnemyActor;
-	int indexForLockedTarget = 2;
+	int32 indexForLockedTarget = 2;
 private:
 	//TOdo 需要在返回普通状态时，将是否boss战变量置为false
 	bool bBOSSFight = false;
