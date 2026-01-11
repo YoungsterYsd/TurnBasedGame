@@ -167,6 +167,54 @@ void ATBG_Character_BattlePlayer::GeneralPlayerAttackOver()
 	UCF_SR::Flib_GetBM()->TurnEnd(this, ConsumeTurn);
 }
 
+void ATBG_Character_BattlePlayer::CalculateDmg(bool bBuff, float& hpDmg, float& toughnessDmg)
+{
+	float f_hpDmg;
+	float f_toughnessDmg;
+	float f_ratio = 0.0f;
+
+	// 根据不同动作确定伤害系数 f_ratio
+	switch (attackType)
+	{
+	case EAttackType::AT_EMAX:
+		f_ratio = 0.0f;
+		break;
+	case EAttackType::AT_NormalATK:
+		f_ratio = 1.0f;
+		break;
+	case EAttackType::AT_SkillATK:
+		f_ratio = 1.0f;
+		break;
+	case EAttackType::AT_FollowTK:
+		f_ratio = 1.0f;
+		break;
+	case EAttackType::AT_Ultimate:
+		f_ratio = playerAtr.UltimateRatio;
+		break;
+	case EAttackType::AT_DelayATK_E:
+		f_ratio = 1.0f;
+		break;
+	default:
+		f_ratio = 0.0f;
+		break;
+	}
+
+	if (bBuff)
+	{
+		f_hpDmg = playerAtr.Attack / float(attackCountIOC) * f_ratio * buffInfo.BuffRatio;
+	}
+	else
+	{
+		f_hpDmg = playerAtr.Attack / float(attackCountIOC) * f_ratio;
+	}
+
+	f_toughnessDmg = playerAtr.Attack / float(attackCountIOC) * f_ratio; // 可以再乘以破盾·削韧效率系数
+
+	// 将值传出
+	hpDmg = f_hpDmg;
+	toughnessDmg = f_toughnessDmg;
+}
+
 void ATBG_Character_BattlePlayer::HandleEP(EAttackType ATKType, bool bDirect, float val)
 {
 	//更新能量ep
@@ -360,4 +408,55 @@ void ATBG_Character_BattlePlayer::Tick(float deltaTime)
 	RotateToTarget_TL.TickTimeline(deltaTime);
 	Slide_F_TL.TickTimeline(deltaTime);
 	Slide_B_TL.TickTimeline(deltaTime);
-} 
+}
+void ATBG_Character_BattlePlayer::Int_SetATK(EAttackType ATKType, int32 AttackCountInOneCycle)
+{
+	//FString str = FString::SanitizeFloat(AttackCountInOneCycle);
+	attackCountIOC = AttackCountInOneCycle;
+	bool bCastingBuff= playerAtr.BuffSkillStats.Contains(ATKType);
+	if(bCastingBuff)
+	{
+		buffInfo = *playerAtr.BuffSkillStats.Find(ATKType);
+	}
+	else
+	{
+		buffInfo.BuffType = EBuffTypes::BT_EMAX;
+		buffInfo.BuffRatio = 0.0f;
+	}
+	//对单体或者多个对象施加作用
+	if (!playerAtr.MultipleTargets.Contains(ATKType)) return;
+	if (*(playerAtr.MultipleTargets.Find(ATKType)))
+	{
+		// 多人对象
+		for (auto ArrayElem : currentTargets)
+		{
+			ICombatInterface* tempInterface = Cast<ICombatInterface>(ArrayElem);
+			if (tempInterface)
+			{
+				float l_hpdmg;
+				float l_tdmg;
+				CalculateDmg(bCastingBuff, l_hpdmg, l_tdmg);
+				tempInterface->Int_HitHandle(this, l_hpdmg, l_tdmg, buffInfo);
+			}
+		}
+	}
+	else
+	{
+		// 单人对象 targetActor
+		ICombatInterface* tempInterface = Cast<ICombatInterface>(targetActor);
+		if (tempInterface)
+		{
+			float l_hpdmg;
+			float l_tdmg;
+			CalculateDmg(bCastingBuff, l_hpdmg, l_tdmg);
+			tempInterface->Int_HitHandle(this, l_hpdmg, l_tdmg, buffInfo);
+		}
+	}
+
+}
+
+void ATBG_Character_BattlePlayer::Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info)
+{
+
+}
+

@@ -38,6 +38,8 @@ public:
 	virtual void Int_GetActionValue(float& actionVal) override;
 	virtual void Int_UpdateActionValue(float winnerVal) override;
 	virtual void Int_RefreshActionValueBySpeed() override;
+	virtual void Int_SetATK(EAttackType ATKType, int32 AttackCountInOneCycle) override ;
+	virtual void Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info) override;
 
 	UFUNCTION(BlueprintCallable)
 	void GetFactionAVAvartar(bool& bPF, float &aV, UTexture2D* &AI);

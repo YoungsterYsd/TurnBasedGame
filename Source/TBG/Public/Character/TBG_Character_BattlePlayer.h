@@ -45,6 +45,7 @@ public:
 	void PlayATKAnimByATKType();
 	void AfterPlayingMeleeATKAnim();
 	void GeneralPlayerAttackOver();
+	void CalculateDmg(bool bBuff, float& hpDmg, float& toughnessDmg);
 
 	void HandleEP(EAttackType ATKType,bool bDirect,float val);
 	UFUNCTION(BlueprintCallable)
@@ -97,7 +98,12 @@ public:
 	AActor*		targetActor;
 	AActor*		rotateToTarget;
 	FVector		targetLocation;
-
 	TArray<AActor*> currentTargets;
+	
+	float		attackCountIOC;
+	FBuffInfo	buffInfo;
+
 	FORCEINLINE USpringArmComponent* GetCameraBoom() { return CameraBoom; }
+	virtual void Int_SetATK(EAttackType ATKType, int32 AttackCountInOneCycle) override;
+	virtual void Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info) override;
 };

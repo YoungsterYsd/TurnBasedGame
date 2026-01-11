@@ -34,3 +34,9 @@ void ATBG_Character_BattleEnemies::BeginPlay()
 	AvatarIcon = enemyInfo.CharIcon_Banner;
 
 }
+
+void ATBG_Character_BattleEnemies::Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info)
+{
+	//ÊÜ»÷Âß¼­
+	if (bDead) return;
+}

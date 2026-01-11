@@ -56,6 +56,14 @@ void ATBG_CharacterBase_Battle::Int_RefreshActionValueBySpeed()
 	//子类覆盖使用
 }
 
+void ATBG_CharacterBase_Battle::Int_SetATK(EAttackType ATKType, int32 AttackCountInOneCycle)
+{
+}
+
+void ATBG_CharacterBase_Battle::Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info)
+{
+}
+
 void ATBG_CharacterBase_Battle::GetFactionAVAvartar(bool &bPF, float &aV, UTexture2D* &AI)
 {
 	bPF = bPlayerFaction;

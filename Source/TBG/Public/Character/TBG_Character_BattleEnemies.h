@@ -32,7 +32,10 @@ public:
 
 	void UpdateLockIcon(bool bHide);
 	virtual void Int_RefreshActionValueBySpeed() override;
+	virtual void Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info) override;
 
 protected:
 	virtual void BeginPlay() override;
+
+
 };
