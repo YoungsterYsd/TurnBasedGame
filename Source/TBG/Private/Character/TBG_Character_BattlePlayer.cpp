@@ -9,6 +9,9 @@
 #include "Components/WidgetComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 ATBG_Character_BattlePlayer::ATBG_Character_BattlePlayer()
 {
@@ -71,7 +74,7 @@ void ATBG_Character_BattlePlayer::PlayAnimationAndTimeline()
 			}
 			else
 			{
-				l_blendTime = 0.6f;
+				l_blendTime = 0.3f;
 			}
 			UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetViewTargetWithBlend(rotateToTarget, l_blendTime);
 		}
@@ -246,10 +249,16 @@ void ATBG_Character_BattlePlayer::HandleEP(EAttackType ATKType, bool bDirect, fl
 		break;
 	}
 
-	if (bDirect) { l_deltaEP = 0.0f; }
-
+	if (bDirect) 
+	{
+		curEnergy = curEnergy + val;
+	}
+	else
+	{
+		curEnergy = curEnergy + l_deltaEP * 1.0f;
+	}
 	// 若扩展能量回复效率（充能效率），可把系数1.0f设为变量，额外控制
-	curEnergy = curEnergy + l_deltaEP * 1.0f;
+
 }
 
 void ATBG_Character_BattlePlayer::GetAttributes(float& mHP, float& cHP, float& mEP, float& cEP, float& mT, float& cT)
@@ -306,7 +315,7 @@ void ATBG_Character_BattlePlayer::TL_SlideB_Finished()
 {
 	// 延迟0.4s后，调用近战、远程通用战斗结束函数
 	GetWorldTimerManager().SetTimer(MeleePlayerEndHandle, this,
-		&ATBG_Character_BattlePlayer::GeneralPlayerAttackOver, 0.4f, false);
+		&ATBG_Character_BattlePlayer::GeneralPlayerAttackOver, 0.2f, false);
 }
 
 void ATBG_Character_BattlePlayer::SingleATK(AActor* target, bool bCounsumeTurn, bool bMelee, EAttackType ATKType)
@@ -458,5 +467,27 @@ void ATBG_Character_BattlePlayer::Int_SetATK(EAttackType ATKType, int32 AttackCo
 void ATBG_Character_BattlePlayer::Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info)
 {
 
+}
+
+void ATBG_Character_BattlePlayer::Int_SetArrowVFX(bool bStartRain)
+{
+	if (bStartRain)
+	{
+		for (auto ArrayElem : currentTargets)
+		{
+			if (ArrayElem)
+			{
+				UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+					GetWorld(), ArrowRainVFX, ArrayElem->GetActorLocation());
+			}
+		}
+	}
+	else
+	{
+		// 生成箭Actor
+		FVector l_spawnLoc = GetMesh()->GetSocketLocation(FName("socket_wep_l"));
+		FRotator l_spawnRot = (targetActor->GetActorLocation() - GetActorLocation()).Rotation();
+		GetWorld()->SpawnActor<AActor>(ArrowActorClass, l_spawnLoc, l_spawnRot);
+	}
 }
 

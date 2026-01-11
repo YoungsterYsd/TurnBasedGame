@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Interface/CombatInterface.h"
+#include "Interface/VFXInterface.h"
 #include "TBG_CharacterBase_Battle.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UWidgetComponent;
 UCLASS()
-class TBG_API ATBG_CharacterBase_Battle : public ACharacter,public ICombatInterface
+class TBG_API ATBG_CharacterBase_Battle : public ACharacter, public ICombatInterface, public IVFXInterface
 {
 	GENERATED_BODY()
 
@@ -40,6 +41,8 @@ public:
 	virtual void Int_RefreshActionValueBySpeed() override;
 	virtual void Int_SetATK(EAttackType ATKType, int32 AttackCountInOneCycle) override ;
 	virtual void Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info) override;
+
+	virtual void Int_SetArrowVFX(bool bStartRain) override;
 
 	UFUNCTION(BlueprintCallable)
 	void GetFactionAVAvartar(bool& bPF, float &aV, UTexture2D* &AI);

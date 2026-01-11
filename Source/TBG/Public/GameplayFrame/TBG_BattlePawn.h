@@ -20,6 +20,11 @@ public:
 	ATBG_PlayerControllerBase* PC = nullptr;
 	UFUNCTION(BlueprintCallable)
 	void TrySwitchingEnemyLockIcon(bool bNext);
+	UFUNCTION(BlueprintCallable)
+	void TryCastingUltimate();
+
+	UFUNCTION(BlueprintCallable)
+	void TryEnterUltimate(int32 index);
 protected:
 
 	virtual void BeginPlay() override;

@@ -19,6 +19,11 @@
 #include "Utilities/CF_SR.h"
 #include "Utilities/GameInst_SR.h"
 
+ATBG_BattleManager::ATBG_BattleManager()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
+
 void ATBG_BattleManager::InitBattle(ATBG_Character_ExploreEnemies* InEnemyRef, ATBG_Character_ExplorePlayer* InPlayerRef)
 {
 	ExploreEnemyRef = InEnemyRef;
@@ -42,8 +47,6 @@ void ATBG_BattleManager::PreInitializeBattle()
 	deadEnemyRefArr.Empty();
 	playerRefArr.Empty();
 	deadPlayerRefArr.Empty();
-	//获取战场生成地点信息
-	InitSpawnPostion();
 	//相机控制
 	ChangeCameraAndStopMovement();
 	//根据敌人站位信息生成敌人
@@ -105,6 +108,60 @@ void ATBG_BattleManager::HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy
 void ATBG_BattleManager::TurnEnd(AActor* endTurnActor, bool bConsumeTurn)
 {
 	//回合结束的逻辑
+	ProgressPhase = EProgressPhase::PP_B3_TurnEnd;
+	//TBD 如果释放大招，删除UI中的大招排队图标
+	RemoveUltimateTurn(endTurnActor);
+	//镜头切换
+	if (bBOSSFight)
+	{
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetViewTargetWithBlend(RetrieveCamera(FName(*fixedCA)));
+	}
+	//如果消耗回合数，减少buff的持续回合
+	//无论是否消耗回合时，重制Action 的行动值，检查是否有追加攻击。
+	if (bConsumeTurn)
+	{///减少buff的持续回合
+	}
+	//重置Action的行动值
+	ResetActionValueAndATKType(bConsumeTurn, endTurnActor);
+	//更新行动值UI
+	ATBG_Character_BattlePlayer* l_tempPlayerRef = Cast<ATBG_Character_BattlePlayer>(endTurnActor);
+	if (l_tempPlayerRef)
+	{
+		BattleLayOut->HandleStatsPanelAnimating(l_tempPlayerRef,false);
+	}
+	//是否执行追加攻击
+	//检查大招是否正在等待释放
+	if (ultimatePlayerQueue.Num() > 0)
+	{
+		//优先释放大招
+		//若敌人回合按下大招，检查敌人回合结束后，改玩家角色是否存活，需要筛选
+		for (auto ArrElement : ultimatePlayerQueue)
+		{
+			if (ArrElement->bDead)
+			{
+				ultimatePlayerQueue.Remove(ArrElement);
+			}
+		}
+		BattleLayOut->RefreshUltimateOrder(ultimatePlayerQueue);
+
+		if (ultimatePlayerQueue[0] != nullptr)
+		{
+			CalculateActionValue_EP();
+			ReadyForUltimate(ultimatePlayerQueue[0]);
+			return;//跳出
+		}
+		else
+		{
+			//大招队列中无角色，进入下一阶段
+			CalculateActionValue();
+			return;//跳出
+		}
+	}
+	else
+	{
+		//开始下一轮
+		CalculateActionValue();
+	}
 }
 
 void ATBG_BattleManager::ChangeCameraAndStopMovement()
@@ -137,6 +194,7 @@ void ATBG_BattleManager::ChangeCameraAndStopMovement()
 	PC->SetViewTargetWithBlend(targetCA);
 
 }
+
 ACameraActor* ATBG_BattleManager::RetrieveCamera(FName tag)
 {
 	// 根据标签寻找对应摄像机
@@ -183,6 +241,8 @@ void ATBG_BattleManager::InitSpawnPostion()
 			playerSpawnPointsArr.Add(ArrayElem);
 		}
 	}	
+	buffCamera = RetrieveCamera(FName(*buffCA));
+	buffCameraOriginLocation = buffCamera->GetActorLocation();
 }
 
 void ATBG_BattleManager::RetrieveEnemyPosition(int32 PosIndex, FVector& TargetPos, float& yaw)
@@ -204,6 +264,7 @@ void ATBG_BattleManager::RetrieveEnemyPosition(int32 PosIndex, FVector& TargetPo
 	yaw = 0.0f;
 	return;
 }
+
 void ATBG_BattleManager::RetrievePlayerPosition(int32 PosIndex, FVector& TargetPos, float& yaw)
 {
 
@@ -223,6 +284,7 @@ void ATBG_BattleManager::RetrievePlayerPosition(int32 PosIndex, FVector& TargetP
 	yaw = 0.0f;
 	return;
 }
+
 void ATBG_BattleManager::SpawnEnemiesAndDecideLocation()
 {
 	for (auto It = EnemyTeamInfo.CreateConstIterator(); It; ++It)
@@ -242,6 +304,7 @@ void ATBG_BattleManager::SpawnEnemiesAndDecideLocation()
 		// TBD - 绑定敌人被击败后的回调
 	}
 }
+
 void ATBG_BattleManager::SpawnPlayerAndDecideLocation()
 {
 	TeamInstForUI.Empty();
@@ -284,6 +347,8 @@ void ATBG_BattleManager::CalculateActionValue()
 	TMap<ACharacter*, float>local_CharacterQueue;
 	TArray<ACharacter*> local_SortedCharacters;
 	float local_WinnerActionVal = 0.f;//所有成员需要减去该行动值
+	//检查复活对象
+	CheckPlayerRevive();
 	// 检查角色是否存活，获取最新行动值剔除不可移动对象
 	for (auto ArrElement : enemiesRefArr)
 	{
@@ -398,6 +463,111 @@ void ATBG_BattleManager::CalculateActionValue()
 		TArray< ATBG_Character_BattleEnemies*> l_LocalEnemyChars;
 		local_Enemy_ActionValue.GenerateKeyArray(l_LocalEnemyChars);
 		HandleEnemyAttack(l_LocalEnemyChars[minIndex_E]);
+	}
+}
+
+void ATBG_BattleManager::CalculateActionValue_EP()
+{
+	// 该函数仅在需要刷新行动值，但是又不会进入下一个回合时使用
+	// 例如追加攻击、特殊技能的场合
+
+	//定义排序相关本地变量
+	TMap< ATBG_Character_BattleEnemies*, float> local_Enemy_ActionValue;
+	TMap< ATBG_Character_BattlePlayer*, float> local_Player_ActionValue;
+	TMap<ACharacter*, float>local_CharacterQueue;
+	TArray<ACharacter*> local_SortedCharacters;
+	float local_WinnerActionVal = 0.f;//所有成员需要减去该行动值
+	//检查角色是否复活
+	CheckPlayerRevive();
+	// 检查角色是否存活，获取最新行动值剔除不可移动对象
+	for (auto ArrElement : enemiesRefArr)
+	{
+		if (!ArrElement->bDead)
+		{
+			local_Enemy_ActionValue.Add(ArrElement, ArrElement->ActionValue);
+			local_CharacterQueue.Add(ArrElement, ArrElement->ActionValue);
+		}
+		else
+		{
+			//TBD 被消灭的敌人解绑对应函数
+			deadEnemyRefArr.Add(ArrElement);
+		}
+	}
+	for (auto ArrElement : playerRefArr)
+	{
+		if (!ArrElement->bDead)
+		{
+			local_Player_ActionValue.Add(ArrElement, ArrElement->ActionValue);
+			local_CharacterQueue.Add(ArrElement, ArrElement->ActionValue);
+		}
+		else
+		{
+			//TBD 被消灭的角色解绑对应函数
+			deadPlayerRefArr.Add(ArrElement);
+		}
+	}
+	//刷新数值，排除不可行动角色
+	local_Enemy_ActionValue.GenerateKeyArray(enemiesRefArr);
+	local_Player_ActionValue.GenerateKeyArray(playerRefArr);
+	//TBD 根据行动值排序,新建映射的原因是，需要遍历的对象会在循环中被更改，所以保存备份，根据备份信息对原实例进行修改。
+	TMap<ACharacter*, float>local_NumDummy;
+	local_NumDummy = local_CharacterQueue;
+	for (auto ArrElement : local_NumDummy)
+	{
+		//依次找到最小值，存入数组后删除
+		TArray<float> localFloats;
+		TArray<ACharacter*> localCharacters;
+		int32 minIndex;
+		float minValue;
+		local_CharacterQueue.GenerateValueArray(localFloats);
+		local_CharacterQueue.GenerateKeyArray(localCharacters);
+		UKismetMathLibrary::MinOfFloatArray(localFloats, minIndex, minValue);
+		local_SortedCharacters.Add(localCharacters[minIndex]);
+		local_CharacterQueue.Remove(localCharacters[minIndex]);
+	}
+	//检查接口是否可用，若可用，则调用方法，获取行动值最小的角色对应的行动值（用接口）
+	if (local_SortedCharacters[0] == nullptr) return;
+	ICombatInterface* tempInterface1 = Cast<ICombatInterface>(local_SortedCharacters[0]);
+	if (tempInterface1 == nullptr) return;
+	tempInterface1->Int_GetActionValue(local_WinnerActionVal);
+
+	// 更新其余的角色行动值
+	for (auto ArrayElem : local_SortedCharacters)
+	{
+		ICombatInterface* tempInterface2 = Cast<ICombatInterface>(ArrayElem);
+		if (tempInterface2 == nullptr) return;
+		tempInterface2->Int_UpdateActionValue(local_WinnerActionVal);
+	}
+
+	//更新UI执行顺序 隐藏锁定图标
+	BattleLayOut->RefreshActionOrder(local_SortedCharacters);
+
+	for (auto ArrElement : enemiesRefArr)
+	{
+		//对应变量为bHiddenInGame，为假时显示
+		ArrElement->UpdateLockIcon(true);
+	}
+
+	//检查战斗是否结束
+	EBattleFlags CurBattleFlag = EBattleFlags::BF_EMAX;
+	CurBattleFlag = CheckGameOver(local_Enemy_ActionValue, local_Player_ActionValue);
+	switch (CurBattleFlag)
+	{
+	case EBattleFlags::BF_EMAX:
+		return;
+		break;
+	case EBattleFlags::BF_ContinueBattle:
+		//跳出，继续执行后续内容
+		break;
+	case EBattleFlags::BF_PlayerWin:
+		BattleEnd(CurBattleFlag);
+		break;
+	case EBattleFlags::BF_EnemyWin:
+		BattleEnd(CurBattleFlag);
+		break;
+	default:
+		return;
+		break;
 	}
 }
 
@@ -543,6 +713,7 @@ void ATBG_BattleManager::ShowEnemyLockIconMultiple(TArray<ATBG_Character_BattleE
 		ArrElement->UpdateLockIcon(false);
 	}
 }
+
 void ATBG_BattleManager::ShowPlayerLockIconByIndex(int32 Index)
 {
 	for (auto ArrElement : playerRefArr)
@@ -555,6 +726,7 @@ void ATBG_BattleManager::ShowPlayerLockIconByIndex(int32 Index)
 		playerRefArr[Index]->UpdateLockIcon(false);
 	}
 }
+
 void ATBG_BattleManager::ShowPlayerLockIconMultiple(TArray<ATBG_Character_BattlePlayer*> InCurrentPlayerTargets)
 {
 	for (auto ArrElement : playerRefArr)
@@ -632,7 +804,6 @@ void ATBG_BattleManager::CalculateLockIndex(bool bNext)
 		SetDeadPlayerLockedIcons();
 	}
 
-	 
 	//TBD是否释放增益模式
 	//设置敌人锁定目标
 	SetMultipleEnemyLocks();
@@ -690,7 +861,7 @@ void ATBG_BattleManager::HideAllLockedIcons()
 	}
 }
 
-void ATBG_BattleManager:: DisplayLockedIconsAndSetTargets()
+void ATBG_BattleManager::DisplayLockedIconsAndSetTargets()
 {
 	// 隐藏所有锁定图标
 	HideAllLockedIcons();
@@ -706,6 +877,7 @@ void ATBG_BattleManager:: DisplayLockedIconsAndSetTargets()
 		UpdateEnemyLockedIconToMultiple();
 	}
 }
+
 void ATBG_BattleManager::UpdatePlayerLockedIconToMultiple()
 {
 	if (NotResurrectSkill())
@@ -732,6 +904,7 @@ void ATBG_BattleManager::UpdatePlayerLockedIconToMultiple()
 		}
 	}
 }
+
 void ATBG_BattleManager::UpdateEnemyLockedIconToMultiple()
 {
 	TArray<ATBG_Character_BattleEnemies*> local_ValidEnemies;
@@ -749,6 +922,7 @@ void ATBG_BattleManager::UpdateEnemyLockedIconToMultiple()
 	if (!enemiesRefArr.IsValidIndex(indexForLockedTarget))return;
 	SetMultipleEnemyLocks();
 }
+
 void ATBG_BattleManager::SwitchAndHideOtherPlayerChars(bool bHideOther, ATBG_Character_BattlePlayer* activePlayer)
 {
 	//TBD_隐藏人物
@@ -760,6 +934,7 @@ void ATBG_BattleManager::SwitchAndHideOtherPlayerChars(bool bHideOther, ATBG_Cha
 	}
 	activePlayer->SetHiddenForPlayer(false);
 }
+
 void ATBG_BattleManager::ExecuteAction(EAttackType ATKType)
 {
 	//根据传入变量执行不同的动作
@@ -796,7 +971,6 @@ void ATBG_BattleManager::ExecuteAction(EAttackType ATKType)
 	}
 }
 
-
 void ATBG_BattleManager::HandlePlayerATK(EAttackType ATKType)
 {
 	if (!ActivePlayer)return;
@@ -824,7 +998,7 @@ void ATBG_BattleManager::HandlePlayerATK(EAttackType ATKType)
 		{
 			if (IAnimInterface* tempInterface = Cast<IAnimInterface>(ActivePlayer->GetMesh()->GetAnimInstance()))
 			{
-				tempInterface->Int_SetUltimateReadeVFX(false);
+				tempInterface->Int_SetUltimateReadyVFX(false);
 			}
 		}
 		// 根据技能配置的目标阵营和涉及数量，修改目标的数量、敌我方
@@ -918,7 +1092,99 @@ void ATBG_BattleManager::ExecuteUltimate()
 		HandlePlayerATK(EAttackType::AT_Ultimate);
 	}
 	//敌方回合，但玩家按下大招
+
 }
+
+void ATBG_BattleManager::EnterUltimate(int32 playerSPIndex)
+{
+	//TBD -按数字键尝试进入大招释放的状态。
+	if(!TeamInstForUI.Contains(playerSPIndex))return;
+	ATBG_Character_BattlePlayer* speciedPlayerChar = *(TeamInstForUI.Find(playerSPIndex));
+	if (speciedPlayerChar == nullptr) return;
+	//检查角色是否死亡，战斗阶段是否允许释放大招
+	bool bPhase =	(ProgressPhase == EProgressPhase::PP_A1_PreInitialization)||
+					(ProgressPhase == EProgressPhase::PP_A2_BattleEnd) ||
+					(ProgressPhase == EProgressPhase::PP_EMAX);
+	if (speciedPlayerChar->bDead || bPhase)return;
+	//检查能量值是否已满
+	//满足则消耗能量，不满足则释放失败。
+
+	//bool bFullEP = (speciedPlayerChar->curEnergy / speciedPlayerChar->maxEnergy) >= 1.0f;
+	//if (!bFullEP)
+	//{
+	//	UGameplayStatics::SpawnSound2D(GetWorld(),UnableSFX);
+	//	return;
+	//}
+	//float l_AllEp = speciedPlayerChar->maxEnergy*(-1.0f);
+	////消耗完能量后，加入大招序列，刷新战斗UI
+	//speciedPlayerChar->HandleEP(EAttackType::AT_EMAX, true, l_AllEp);
+
+	ultimatePlayerQueue.Add(speciedPlayerChar);
+	BattleLayOut->RefreshUltimateOrder(ultimatePlayerQueue);
+
+	//如果玩家角色回合，立刻发动
+	//否则，回合结束后再发动
+	if (ProgressPhase != EProgressPhase::PP_B2a_PlayerActionTime)return;
+	//如果角色不是当前玩家角色， 改变UI动画，进入大招释放状态。
+	if (ActivePlayer != ultimatePlayerQueue[0] && ActivePlayer != nullptr)
+	{
+		BattleLayOut->HandleStatsPanelAnimating(ActivePlayer, false);
+	}
+	ReadyForUltimate(ultimatePlayerQueue[0]);
+}
+
+void ATBG_BattleManager::ResetActionValueAndATKType(bool bCounsumeTurn, AActor* endActor)
+{
+	if (bCounsumeTurn)
+	{
+		ICombatInterface* tempInterface = Cast<ICombatInterface>(endActor);
+		if (tempInterface)
+		{
+			tempInterface->Int_RefreshActionValueBySpeed();
+		}
+	}
+	//不消耗回合就不刷新行动值
+	//重制ATKType
+	if (ActivePlayer)
+	{
+		ActivePlayer->attackType = EAttackType::AT_NormalATK;
+	}
+	//置空activeplayer
+	ActivePlayer = nullptr;
+}
+
+void ATBG_BattleManager::ReadyForUltimate(ATBG_Character_BattlePlayer* readyCharRef)
+{
+
+	// 大招准备释放状态
+	ActivePlayer = readyCharRef;
+	ActivePlayer->attackType = EAttackType::AT_Ultimate;
+	ProgressPhase = EProgressPhase::PP_B2a_PlayerActionTime;
+	DisplayLockedIconsAndSetTargets();
+	CameraForBuffSelections();
+	IAnimInterface* tempInterface = Cast<IAnimInterface>(ActivePlayer->GetMesh()->GetAnimInstance());
+	if (tempInterface)
+	{
+		tempInterface->Int_SetUltimateReadyVFX(true);
+	}
+	BattleLayOut->SwitchATKMode(EAttackType::AT_Ultimate);
+}
+
+void ATBG_BattleManager::RemoveUltimateTurn(AActor* charRef)
+{
+	ATBG_Character_BattlePlayer* tempPlayerChar = Cast<ATBG_Character_BattlePlayer>(charRef);
+	if (tempPlayerChar == nullptr) return;
+	bool bInUltimateTurn = tempPlayerChar->attackType == EAttackType::AT_Ultimate;
+	if (!bInUltimateTurn) return;
+	ultimatePlayerQueue.RemoveAt(0);
+	// 立刻刷新UI
+	BattleLayOut->RefreshUltimateOrder(ultimatePlayerQueue);
+}
+
+void ATBG_BattleManager::CheckPlayerRevive()
+{
+}
+
 void ATBG_BattleManager::CameraForBuffSelections()
 {
 	if (IsBuffTarget())
@@ -948,6 +1214,62 @@ void ATBG_BattleManager::CameraForBuffSelections()
 void ATBG_BattleManager::BeginPlay()
 {
 	Super::BeginPlay();
+	//获取战场生成地点信息
+	InitSpawnPostion();
+}
+
+void ATBG_BattleManager::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	bool retFlag;
+	CameraForBuffSmooth(DeltaTime, retFlag);
+	if (retFlag) return;
+}
+
+void ATBG_BattleManager::CameraForBuffSmooth(float DeltaTime, bool& retFlag)
+{
+	retFlag = true;
+	if (ActivePlayer == nullptr) return;
+	if (buffCamera == nullptr) return;
+
+	float l_locY;
+	if (IsMutipleTargets())
+	{
+		// 多人回复时，摄像机回到原点
+		l_locY = buffCameraOriginLocation.Y;
+	}
+	else
+	{
+		AActor* l_targetActor;
+		if (currentPlayerTarget != nullptr)
+		{
+			l_targetActor = currentPlayerTarget;
+		}
+		else
+		{
+			// 可能有无有效目标（如使用复活技能时队伍中没有成员可复活，则镜头对准自己）
+			bool b1 = ActivePlayer->attackType == EAttackType::AT_SkillATK;
+			FBuffInfo fbi = *(ActivePlayer->playerAtr.BuffSkillStats.Find(EAttackType::AT_SkillATK));
+			bool b2 = fbi.BuffType == EBuffTypes::BT_Resurrection;
+			if (b1 && b2)
+			{
+				l_targetActor = ActivePlayer;
+			}
+			else
+			{
+				// 跳出
+				return;
+			}
+		}
+
+		l_locY = l_targetActor->GetActorLocation().Y;
+	}
+
+	float l_finalY = FMath::FInterpTo(buffCamera->GetActorLocation().Y, l_locY, DeltaTime, 1.0f);
+	FVector finalTargetLoc = FVector(buffCameraOriginLocation.X, l_finalY, buffCameraOriginLocation.Z);
+	buffCamera->SetActorLocation(finalTargetLoc);
+	retFlag = false;
 }
 
 void ATBG_BattleManager::LoadBattleUI() 

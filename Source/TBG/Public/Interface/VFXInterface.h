@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "AnimInterface.generated.h"
+#include "VFXInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UAnimInterface : public UInterface
+class UVFXInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,12 +16,11 @@ class UAnimInterface : public UInterface
 /**
  * 
  */
-class TBG_API IAnimInterface
+class TBG_API IVFXInterface
 {
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	//设置放大时的视觉特效
-	virtual void Int_SetUltimateReadyVFX(bool bShow) = 0;
+	virtual void Int_SetArrowVFX(bool bRain) = 0;
 };

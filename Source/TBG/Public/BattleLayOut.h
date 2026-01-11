@@ -32,4 +32,6 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void HideATKButtons();
+	UFUNCTION(BlueprintImplementableEvent)
+	void RefreshUltimateOrder(const TArray<ATBG_Character_BattlePlayer*>& playerCharRefs);
 };

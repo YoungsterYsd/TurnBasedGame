@@ -26,6 +26,7 @@ class TBG_API ATBG_BattleManager : public AActor
 {
 	GENERATED_BODY()
 public:
+	ATBG_BattleManager();
 	void InitBattle(ATBG_Character_ExploreEnemies* EnemyRef, ATBG_Character_ExplorePlayer* PlayerRef);
 	
 	void PreInitializeBattle();
@@ -46,6 +47,7 @@ public:
 
 	//B1
 	void CalculateActionValue();
+	void CalculateActionValue_EP();
 	EBattleFlags CheckGameOver(TMap<ATBG_Character_BattleEnemies*,float> eArr, TMap<ATBG_Character_BattlePlayer*, float> pArr);
 
 	//我方攻击
@@ -76,11 +78,20 @@ public:
 	void ExecuteAction(EAttackType ATKType);
 	void HandlePlayerATK(EAttackType ATKType);
 	void ExecuteUltimate();
+	void EnterUltimate(int32 playerSPIndex);
+
+	void ResetActionValueAndATKType(bool bCounsumeTurn, AActor* endActor);
+	void ReadyForUltimate(ATBG_Character_BattlePlayer* readyCharRef);
+	void RemoveUltimateTurn(AActor* charRef);
+
+	void CheckPlayerRevive();
 
 	//Camera
 	void CameraForBuffSelections();
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime)override;
+	void CameraForBuffSmooth(float DeltaTime, bool& retFlag);
 	EProgressPhase ProgressPhase{ EProgressPhase::PP_EMAX}; 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
@@ -129,6 +140,9 @@ public:
 	TArray<ATBG_Character_BattlePlayer*>	currentPlayerTargets;
 	//鼠标点击用
 	AActor* lastClickedActor;
+	ACameraActor* buffCamera;
+	FVector buffCameraOriginLocation;
+
 	int32 indexForLockedTarget = 2;
 	int32 skillPoints = 2;//初始技能点，普工增加
 

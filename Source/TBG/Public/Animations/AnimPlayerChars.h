@@ -8,9 +8,8 @@
 #include "TBG_ES.h"
 #include "AnimPlayerChars.generated.h"
 
-/**
- * 
- */
+class UNiagaraSystem;
+class UNiagaraComponent;
 UCLASS()
 class TBG_API UAnimPlayerChars : public UAnimInstance,public IAnimInterface
 {
@@ -20,10 +19,16 @@ public:
 	UFUNCTION(BlueprintCallable,BlueprintPure, meta = (BlueprintThreadSafe = "true"))
 	EAttackType const GetAttackType();
 
-	virtual void Int_SetUltimateReadeVFX(bool bShow) override;
+	virtual void Int_SetUltimateReadyVFX(bool bShow) override;
+	void SpawnEmitterFunc();
 protected:
 	virtual void NativeUpdateAnimation(float DeltaSeconds)override;
 public:
-	EAttackType attackType;
+	EAttackType attackType{ EAttackType::AT_EMAX };
+
+	UNiagaraComponent* NComp;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Presets")
+	UNiagaraSystem* UltimateReadyVFX;
 };
  

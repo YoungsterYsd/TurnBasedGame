@@ -23,6 +23,15 @@ void ATBG_BattlePawn::TrySwitchingEnemyLockIcon(bool bNext)
 	UCF_SR::Flib_GetBM()->SwitchEnemyLockIcon(bNext);
 }
 
+void ATBG_BattlePawn::TryCastingUltimate()
+{
+	UCF_SR::Flib_GetBM()->ExecuteUltimate();
+}
+
+void ATBG_BattlePawn::TryEnterUltimate(int32 index)
+{
+	UCF_SR::Flib_GetBM()->EnterUltimate(index);
+}
 
 void ATBG_BattlePawn::BeginPlay()
 {

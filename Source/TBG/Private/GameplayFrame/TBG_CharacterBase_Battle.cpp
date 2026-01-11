@@ -64,6 +64,10 @@ void ATBG_CharacterBase_Battle::Int_HitHandle(AActor* causer, float HP_Dmg, floa
 {
 }
 
+void ATBG_CharacterBase_Battle::Int_SetArrowVFX(bool bStartRain)
+{
+}
+
 void ATBG_CharacterBase_Battle::GetFactionAVAvartar(bool &bPF, float &aV, UTexture2D* &AI)
 {
 	bPF = bPlayerFaction;

@@ -16,6 +16,7 @@ struct	FPlayerCharAttributes;
 class	UCurveFloat;
 struct	FTimeline;
 class	USpringArmComponent;
+class	UNiagaraSystem;
 UCLASS()
 class TBG_API ATBG_Character_BattlePlayer : public ATBG_CharacterBase_Battle
 {
@@ -79,6 +80,11 @@ public:
 	FTimeline Slide_F_TL;
 	FTimeline Slide_B_TL;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, CateGory = "Presets")
+	UNiagaraSystem* ArrowRainVFX;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, CateGory = "Presets")
+	TSubclassOf<AActor> ArrowActorClass;
+
 	FTimerHandle PlayATKAnimHandler;
 	FTimerHandle AfterPlayeringMeleeATKAnimHandle;
 	FTimerHandle MeleePlayerEndHandle;
@@ -106,4 +112,6 @@ public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() { return CameraBoom; }
 	virtual void Int_SetATK(EAttackType ATKType, int32 AttackCountInOneCycle) override;
 	virtual void Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info) override;
+
+	virtual void Int_SetArrowVFX(bool bStartRain) override;
 };
