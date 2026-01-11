@@ -36,7 +36,9 @@ void ATBG_Character_BattlePlayer::InitializeCharData()
 	maxHP = playerAtr.HP;
 	curHP = maxHP;
 	maxEnergy = playerAtr.Energy;
-	curEnergy = maxEnergy;
+	curEnergy = 0;
+	maxToughness = 0;
+	curToughness = maxToughness;
 	GetMesh()->SetSkeletalMesh(playerAtr.SKM);
 	GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 	GetMesh()->SetAnimInstanceClass(playerAtr.AnimClass);
@@ -132,10 +134,21 @@ void ATBG_Character_BattlePlayer::PlayATKAnimByATKType()
 	}
 	float animTime = PlaySpecifiedAnim(specifiedActionString);
 	//播放动画后执行下一段逻辑
+	//能量修改
+	HandleEP(attackType, false, 0.0f);
 
 	//计时器
-	GetWorldTimerManager().SetTimer(AfterPlayeringMeleeATKAnimHandle, this,
-		&ATBG_Character_BattlePlayer::AfterPlayingMeleeATKAnim, animTime, false);
+	if (Melee)
+	{
+		GetWorldTimerManager().SetTimer(AfterPlayeringMeleeATKAnimHandle, this,
+			&ATBG_Character_BattlePlayer::AfterPlayingMeleeATKAnim, animTime, false);
+	}
+	else
+	{
+		GetWorldTimerManager().SetTimer(AfterPlayeringMeleeATKAnimHandle, this,
+			&ATBG_Character_BattlePlayer::GeneralPlayerAttackOver, animTime, false);
+	}
+
 }
 
 void ATBG_Character_BattlePlayer::AfterPlayingMeleeATKAnim()
@@ -152,6 +165,53 @@ void ATBG_Character_BattlePlayer::GeneralPlayerAttackOver()
 	//恢复转向，进入下一阶段
 	RotateToTarget_TL.ReverseFromEnd();
 	UCF_SR::Flib_GetBM()->TurnEnd(this, ConsumeTurn);
+}
+
+void ATBG_Character_BattlePlayer::HandleEP(EAttackType ATKType, bool bDirect, float val)
+{
+	//更新能量ep
+	// 更新能量值EP
+	// 参考：释放战技回复30点，普攻回复20点，大招返还5点，受击单体攻击回复10点，受到AOE攻击回复10点，
+	// 击杀敌人获得10点，追加攻击回复5-10点；均受到“能量回复效率（充能效率）”值影响
+
+	float l_deltaEP = 0.0f;
+
+	switch (ATKType)
+	{
+	case EAttackType::AT_EMAX:
+		break;
+	case EAttackType::AT_NormalATK:
+		l_deltaEP = 20.0f;
+		break;
+	case EAttackType::AT_SkillATK:
+		l_deltaEP = 30.0f;
+		break;
+	case EAttackType::AT_FollowTK:
+		l_deltaEP = 8.0f;
+		break;
+	case EAttackType::AT_Ultimate:
+		l_deltaEP = 5.0f;
+		break;
+	case EAttackType::AT_DelayATK_E:
+		break;
+	default:
+		break;
+	}
+
+	if (bDirect) { l_deltaEP = 0.0f; }
+
+	// 若扩展能量回复效率（充能效率），可把系数1.0f设为变量，额外控制
+	curEnergy = curEnergy + l_deltaEP * 1.0f;
+}
+
+void ATBG_Character_BattlePlayer::GetAttributes(float& mHP, float& cHP, float& mEP, float& cEP, float& mT, float& cT)
+{
+	mHP = maxHP;
+	cHP = curHP;
+	mEP = maxEnergy;
+	cEP = curEnergy;
+	mT = maxToughness;
+	cT = curToughness;
 }
 
 void ATBG_Character_BattlePlayer::TL_RotateToTarget(float deltaTime)

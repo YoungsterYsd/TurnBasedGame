@@ -46,6 +46,10 @@ public:
 	void AfterPlayingMeleeATKAnim();
 	void GeneralPlayerAttackOver();
 
+	void HandleEP(EAttackType ATKType,bool bDirect,float val);
+	UFUNCTION(BlueprintCallable)
+	void GetAttributes(float& mHP, float& cHP, float& mEP, float& cEP, float& mT, float& cT);
+
 	UFUNCTION()
 	void TL_RotateToTarget(float deltaTime);
 	UFUNCTION()
@@ -83,6 +87,9 @@ public:
 	float		curHP;
 	float		maxEnergy;
 	float		curEnergy;
+	float		maxToughness;
+	float		curToughness;
+
 	FVector		OringinalLocation;
 	FRotator	OriginalRotation;
 	bool		ConsumeTurn;
