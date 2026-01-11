@@ -33,6 +33,7 @@ public:
 	void BattleEnd(EBattleFlags endResult);
 	void HandlePlayerAttack(ATBG_Character_BattlePlayer* InPlayer);
 	void HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy);
+	void TurnEnd(AActor* endTurnActor,bool bConsumeTurn);
 
 	//A1
 	void ChangeCameraAndStopMovement();

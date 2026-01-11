@@ -80,10 +80,13 @@ void ATBG_Character_BattlePlayer::PlayAnimationAndTimeline()
 		//播放指定的动画
 		PlaySpecifiedAnim("Slide_F");
 		//TBD 时间轴移动
+		Slide_F_TL.PlayFromStart();
+		//Slide_B_TL.PlayFromStart();
 	}
 	else
 	{
-		//TBD 远程逻辑
+		//远程逻辑
+		PlayATKAnimByATKType();
 	}
 }
 
@@ -103,6 +106,54 @@ float ATBG_Character_BattlePlayer::PlaySpecifiedAnim(FString str)
 	return l_animTime;
 }
 
+void ATBG_Character_BattlePlayer::PlayATKAnimByATKType()
+{
+	FString specifiedActionString;
+	switch(attackType)
+	{
+	case EAttackType::AT_EMAX:
+		break;
+	case EAttackType::AT_NormalATK:
+		specifiedActionString = "normalATK";
+		break;
+	case EAttackType::AT_SkillATK:
+		specifiedActionString = "skillATK";
+		break;
+	case EAttackType::AT_FollowTK:
+		specifiedActionString = "followATK";
+		break;
+	case EAttackType::AT_Ultimate:
+		specifiedActionString = "ultimateATK";
+		break;
+	case EAttackType::AT_DelayATK_E:
+		break;
+	default:
+		break;
+	}
+	float animTime = PlaySpecifiedAnim(specifiedActionString);
+	//播放动画后执行下一段逻辑
+
+	//计时器
+	GetWorldTimerManager().SetTimer(AfterPlayeringMeleeATKAnimHandle, this,
+		&ATBG_Character_BattlePlayer::AfterPlayingMeleeATKAnim, animTime, false);
+}
+
+void ATBG_Character_BattlePlayer::AfterPlayingMeleeATKAnim()
+{
+	//播放跳回的蒙太奇
+	PlaySpecifiedAnim("Slide_B");
+	//执行回城时间轴
+	Slide_B_TL.PlayFromStart();
+	//
+}
+
+void ATBG_Character_BattlePlayer::GeneralPlayerAttackOver()
+{
+	//恢复转向，进入下一阶段
+	RotateToTarget_TL.ReverseFromEnd();
+	UCF_SR::Flib_GetBM()->TurnEnd(this, ConsumeTurn);
+}
+
 void ATBG_Character_BattlePlayer::TL_RotateToTarget(float deltaTime)
 {
 	//deltaTime 0-1 时间根据Curve而定
@@ -117,6 +168,37 @@ void ATBG_Character_BattlePlayer::TL_RotateToTarget(float deltaTime)
 		SetActorRotation(FRotator(0, l_tempRot.Yaw, 0));
 	}
 
+}
+
+void ATBG_Character_BattlePlayer::TL_Slide_F(float deltaTime)
+{
+	//移动玩家角色
+	FVector l_targetLoc = UKismetMathLibrary::VLerp(OringinalLocation, targetLocation, deltaTime);
+	SetActorLocation(l_targetLoc);
+}
+
+void ATBG_Character_BattlePlayer::TL_SlideF_Finished()
+{
+	//停止蒙太奇
+	GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
+	//延迟0.2f，设置定时器
+	GetWorldTimerManager().SetTimer(PlayATKAnimHandler, this,
+		&ATBG_Character_BattlePlayer::PlayATKAnimByATKType, 0.2f, false);
+
+}
+
+void ATBG_Character_BattlePlayer::TL_Slide_B(float deltaTime)
+{
+	//移动玩家角色
+	FVector l_targetLoc = UKismetMathLibrary::VLerp(targetLocation, OringinalLocation, deltaTime);
+	SetActorLocation(l_targetLoc);
+}
+
+void ATBG_Character_BattlePlayer::TL_SlideB_Finished()
+{
+	// 延迟0.4s后，调用近战、远程通用战斗结束函数
+	GetWorldTimerManager().SetTimer(MeleePlayerEndHandle, this,
+		&ATBG_Character_BattlePlayer::GeneralPlayerAttackOver, 0.4f, false);
 }
 
 void ATBG_Character_BattlePlayer::SingleATK(AActor* target, bool bCounsumeTurn, bool bMelee, EAttackType ATKType)
@@ -159,6 +241,7 @@ void ATBG_Character_BattlePlayer::BeginPlay()
 	InitializeCharData();
 	//初始化镜头角度
 	float l_springArmYaw = 0.f; 
+	//根据位置不同进行偏移
 	if (PositionID != -1)
 	{
 		switch (PositionID)
@@ -189,6 +272,25 @@ void ATBG_Character_BattlePlayer::BeginPlay()
 		RtTHandler.BindUFunction(this, FName("TL_RotateToTarget"));
 		RotateToTarget_TL.AddInterpFloat(Curve_RotateToTarget, RtTHandler);
 	}
+	if(Curve_Sliding)
+	{
+		FOnTimelineFloat SLFHandler;
+		SLFHandler.BindUFunction(this, FName("TL_Slide_F"));
+		Slide_F_TL.AddInterpFloat(Curve_Sliding, SLFHandler);
+
+		FOnTimelineEvent SLFEventHandler;
+		SLFEventHandler.BindUFunction(this, FName("TL_SlideF_Finished"));
+		Slide_F_TL.SetTimelineFinishedFunc(SLFEventHandler);
+
+		FOnTimelineFloat SLBHandler;
+		SLBHandler.BindUFunction(this, FName("TL_Slide_B"));
+		Slide_B_TL.AddInterpFloat(Curve_Sliding, SLBHandler);
+
+		FOnTimelineEvent SLBEventHandler;
+		SLBEventHandler.BindUFunction(this, FName("TL_SlideB_Finished"));
+		Slide_B_TL.SetTimelineFinishedFunc(SLBEventHandler);
+	}
+	
 }
 
 void ATBG_Character_BattlePlayer::Tick(float deltaTime)
@@ -196,4 +298,6 @@ void ATBG_Character_BattlePlayer::Tick(float deltaTime)
 	Super::Tick(deltaTime);
 	//注册时间轴
 	RotateToTarget_TL.TickTimeline(deltaTime);
+	Slide_F_TL.TickTimeline(deltaTime);
+	Slide_B_TL.TickTimeline(deltaTime);
 } 

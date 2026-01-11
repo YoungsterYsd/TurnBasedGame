@@ -102,6 +102,11 @@ void ATBG_BattleManager::HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy
 	ActiveEnemy = InEnemy;
 }
 
+void ATBG_BattleManager::TurnEnd(AActor* endTurnActor, bool bConsumeTurn)
+{
+	//回合结束的逻辑
+}
+
 void ATBG_BattleManager::ChangeCameraAndStopMovement()
 {
 	// 生成Battle Pawn，控制它并使用在其中定义的按键

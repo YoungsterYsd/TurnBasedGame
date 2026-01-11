@@ -40,10 +40,22 @@ public:
 	void InitializeCharData();
 	void PlayAnimationAndTimeline();
 	void SetHiddenForPlayer(bool bCustomHidden);
+	//动画播放相关
 	float PlaySpecifiedAnim(FString str);
+	void PlayATKAnimByATKType();
+	void AfterPlayingMeleeATKAnim();
+	void GeneralPlayerAttackOver();
 
 	UFUNCTION()
 	void TL_RotateToTarget(float deltaTime);
+	UFUNCTION()
+	void TL_Slide_F(float deltaTime);
+	UFUNCTION()
+	void TL_SlideF_Finished();
+	UFUNCTION()
+	void TL_Slide_B(float deltaTime);
+	UFUNCTION()
+	void TL_SlideB_Finished();
 
 	void SingleATK(AActor* target,bool bCounsumeTurn,bool bMelee,EAttackType ATKType);
 	void MultipleATK(TArray<AActor*> targets, bool bCounsumeTurn, bool bMelee, EAttackType ATKType);
@@ -53,8 +65,18 @@ protected:
 	virtual void Tick(float deltaTime)override;
 public:
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,CateGory = "Presets")
-	UCurveFloat* Curve_RotateToTarget;//由于角色转向
+	UCurveFloat* Curve_RotateToTarget;//用于角色转向
 	FTimeline RotateToTarget_TL;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, CateGory = "Presets")
+	UCurveFloat* Curve_Sliding;//冲刺动作
+
+	FTimeline Slide_F_TL;
+	FTimeline Slide_B_TL;
+
+	FTimerHandle PlayATKAnimHandler;
+	FTimerHandle AfterPlayeringMeleeATKAnimHandle;
+	FTimerHandle MeleePlayerEndHandle;
 
 	EAttackType attackType{ EAttackType::AT_NormalATK };//默认普通攻击
 	float		maxHP;
