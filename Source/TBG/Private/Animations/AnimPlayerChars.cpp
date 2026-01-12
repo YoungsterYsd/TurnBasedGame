@@ -7,6 +7,7 @@
 #include "NiagaraSystem.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Actor/FloatingIndicator.h"
 
 EAttackType const UAnimPlayerChars::GetAttackType()
 {
