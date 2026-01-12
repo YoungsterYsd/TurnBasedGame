@@ -10,7 +10,7 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Actor/FloatingIndicator.h"
-
+#include "Camera/CameraShakeBase.h"
 ATBG_Character_BattleEnemies::ATBG_Character_BattleEnemies()
 {
 	HeadBar = CreateDefaultSubobject<UWidgetComponent>("Head Bar");
@@ -102,7 +102,128 @@ void ATBG_Character_BattleEnemies::ResetDilation()
 
 void ATBG_Character_BattleEnemies::PlayerCameraShake()
 {
-	//TBD
+	// 根据攻击的种类不同，镜头振动的效果也不同
+	ATBG_Character_BattlePlayer*  tempPlayerRef = Cast<ATBG_Character_BattlePlayer>(dmgCauser);
+	if (tempPlayerRef == nullptr) return;
+	EAttackType l_at = tempPlayerRef->attackType;
+
+	TSubclassOf<UCameraShakeBase> l_CSB = nullptr;
+	switch (l_at)
+	{
+	case EAttackType::AT_EMAX:
+		l_CSB = nullptr;
+		break;
+	case EAttackType::AT_NormalATK:
+		l_CSB = normalCS;
+		break;
+	case EAttackType::AT_SkillATK:
+		l_CSB = skillCS;
+		break;
+	case EAttackType::AT_FollowTK:
+		l_CSB = followCS;
+		break;
+	case EAttackType::AT_Ultimate:
+		l_CSB = ultimateCS;
+		break;
+	case EAttackType::AT_DelayATK_E:
+		l_CSB = nullptr;
+		break;
+	default:
+		l_CSB = nullptr;
+		break;
+	}
+
+	if (l_CSB == nullptr) return;
+
+	GetWorld()->GetFirstPlayerController()->PlayerCameraManager->PlayWorldCameraShake(
+		GetWorld(),
+		l_CSB,
+		GetActorLocation(),
+		0.0f,
+		4000.0f,
+		0.0f,
+		false
+	);
+}
+
+float ATBG_Character_BattleEnemies::PlaySpecificAnim(const FString& animKey)
+{
+	// 如果未找到Key，则不播放
+	if (!animMontages.Contains(animKey)) return 0.0f;
+
+	// 如果找到Key， 但Value无效，则不播放
+	if (*(animMontages.Find(animKey)) == nullptr) return 0.0f;
+
+	float l_animTime = PlayAnimMontage(*(animMontages.Find(animKey)));
+
+	return l_animTime;
+}
+
+void ATBG_Character_BattleEnemies::EnterStun(int32 delayTurns)
+{
+	// 晕眩持续delayTurns回合，默认1回合
+
+	bStun = true;
+
+	PlaySpecificAnim("Stun");
+
+	// 晕眩即破盾，基础效果推条25%，即行动推迟25%；即ActionValue增加
+	// 进阶破盾效果暂不考虑（如不同属性击破后出现debuff）
+	ActionValue = ActionValue + (10000 / enemyInfo.Speed) * 0.25;
+	
+	// 设置晕眩持续的回合数
+	recoverFromStunTurns = delayTurns;
+
+	// 播放晕眩特效
+	PlayStunVFX();
+
+	// 配合BOSS的晕眩动画，设置自定义事件供重写
+	ExtraActionWhenStun(true);
+
+	// 如果BOSS已经用延迟攻击，那么取消该延迟攻击
+	if (bDelayed_ATK)
+	{
+		SetDelayedTarget(false, delayedTarget);
+	}
+}
+
+void ATBG_Character_BattleEnemies::PlayStunVFX()
+{
+	// 若已经有晕眩特效，忽略以下逻辑
+	if (StunVFXComp != nullptr) return;
+
+	FVector l_loc = FVector(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + stunVFXHeight);
+	StunVFXComp = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), StunVFX, l_loc);
+}
+
+void ATBG_Character_BattleEnemies::SetDelayedTarget(bool delay, ATBG_Character_BattlePlayer* target)
+{
+	//TBD 后续再做
+}
+
+void ATBG_Character_BattleEnemies::RecoverFromStun()
+{
+	// 消耗一回合，减少一次
+	recoverFromStunTurns = recoverFromStunTurns - 1;
+	if (recoverFromStunTurns > 0) return;
+
+	// 回复正常
+	StopAnimMontage();
+
+	// 重置相关变量的值
+	recoverFromStunTurns = 0;
+	curThoughness = maxThoughness;
+	UpdateHeadBar();
+	bStun = false;
+
+	ExtraActionWhenStun(false);
+
+	// 销毁晕眩特效
+	if (StunVFXComp != nullptr)
+	{
+		StunVFXComp->DestroyComponent();
+		StunVFXComp = nullptr;
+	}
 }
 
 bool ATBG_Character_BattleEnemies::CheckElementATK(ECombatType cType)
@@ -174,6 +295,37 @@ void ATBG_Character_BattleEnemies::Int_HitHandle(AActor* causer, float HP_Dmg, f
 
 	// 播放受击特效、顿帧、镜头振动、声音
 	HandleFX();
+	// 是否死亡
+	if (curHP <= 0)
+	{
+		// TBD - 死亡逻辑
+
+	}
+	else
+	{
+		// 是否晕眩
+		if (curThoughness <= 0)
+		{
+			// 若已经进入晕眩状态，则不再重复播放晕眩动画
+			if (bStun) return;
+			EnterStun(1);
+		}
+		else
+		{
+			// 普通受击
+			FString str;
+			bool bRandomBool = FMath::RandHelper(100) > 50;
+			if (bRandomBool)
+			{
+				str = "Hit1";
+			}
+			else
+			{
+				str = "Hit2";
+			}
+			PlaySpecificAnim(str);
+		}
+	}
 }
 void ATBG_Character_BattleEnemies::InitializeCharData()
 {

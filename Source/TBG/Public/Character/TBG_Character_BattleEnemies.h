@@ -15,6 +15,7 @@ class 	UWidgetComponent;
 class	AFloatingIndicator;
 class	UNiagaraSystem;
 class	UNiagaraComponent;
+class	UCameraShakeBase;
 UCLASS()
 class TBG_API ATBG_Character_BattleEnemies : public ATBG_CharacterBase_Battle
 {
@@ -40,7 +41,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	UNiagaraSystem* HitVFX;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Presets")
+	UParticleSystem* StunVFX;
+
 	UNiagaraComponent* NComp;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Presets")
+	TSubclassOf<UCameraShakeBase> normalCS;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Presets")
+	TSubclassOf<UCameraShakeBase> skillCS;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Presets")
+	TSubclassOf<UCameraShakeBase> followCS;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Presets")
+	TSubclassOf<UCameraShakeBase> ultimateCS;
 
 	void UpdateLockIcon(bool bHide);
 	void InitializeCharData();
@@ -51,6 +67,14 @@ public:
 	void EnterDialtion();
 	void ResetDilation();
 	void PlayerCameraShake();
+	float PlaySpecificAnim(const FString& animKey);
+	void EnterStun(int32 delayTurns);
+	void PlayStunVFX();
+	void SetDelayedTarget(bool delay, ATBG_Character_BattlePlayer* target);
+	void RecoverFromStun();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void ExtraActionWhenStun(bool bEnter);
 
 	bool CheckElementATK(ECombatType cType);
 
@@ -71,6 +95,10 @@ public:
 
 	AActor* dmgCauser;
 	float receivedHPDmg;
+	int32 recoverFromStunTurns = 0;
+	UParticleSystemComponent* StunVFXComp;
+	bool bDelayed_ATK = false;
+	ATBG_Character_BattlePlayer* delayedTarget;
 
 	FTimerHandle dilationHandle;
 
