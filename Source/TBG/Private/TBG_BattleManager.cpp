@@ -34,7 +34,7 @@ void ATBG_BattleManager::InitBattle(ATBG_Character_ExploreEnemies* InEnemyRef, A
 	//初始化战场
 	PreInitializeBattle();
 	//展示敌人阵容的时间
-	GetWorld()->GetTimerManager().SetTimer(DisplayEnemyTimeHandle, this,&ATBG_BattleManager::PostInitialzeBattle,EnemyDisplayTime,false);
+	GetWorld()->GetTimerManager().SetTimer(DisplayEnemyTimerHandle, this,&ATBG_BattleManager::PostInitialzeBattle,EnemyDisplayTime,false);
 }
 
 void ATBG_BattleManager::PreInitializeBattle()
@@ -73,6 +73,9 @@ void ATBG_BattleManager::PostInitialzeBattle()
 void ATBG_BattleManager::BattleEnd(EBattleFlags endResult)
 {
 	//胜利则退出战斗状态，回到探索，若失败，则退出游戏
+	ProgressPhase = EProgressPhase::PP_A2_BattleEnd;
+	BattleLayOut->BattleOverHint();
+	GetWorld()->GetTimerManager().SetTimer(HandleDelaysTimerHandle,this, &ATBG_BattleManager::HandleDelays,1.5f,false);
 }
 
 void ATBG_BattleManager::HandlePlayerAttack(ATBG_Character_BattlePlayer* InPlayer)
@@ -103,6 +106,18 @@ void ATBG_BattleManager::HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy
 	//GEngine->AddOnScreenDebugMessage(0, 10.f, FColor::Black, TEXT("Enemy!"));
 	ProgressPhase = EProgressPhase::PP_B2b_EnemyActionTime;
 	ActiveEnemy = InEnemy;
+	BattleLayOut->HideATKButtons();
+	if (ActiveEnemy->bStun) 
+	{
+		ActiveEnemy->RecoverFromStun();
+		TurnEnd(ActiveEnemy, true);
+	}
+	else
+	{
+		EAttackType enemyATKType = EAttackType::AT_NormalATK;
+		//攻击逻辑
+		BattleLayOut->HandlePhaseHintForEnemyTurn(ActiveEnemy, bBOSSFight, enemyATKType);
+	}
 }
 
 void ATBG_BattleManager::TurnEnd(AActor* endTurnActor, bool bConsumeTurn)
@@ -299,9 +314,10 @@ void ATBG_BattleManager::SpawnEnemiesAndDecideLocation()
 		ATBG_Character_BattleEnemies* enemyTemp = GetWorld()->SpawnActor<ATBG_Character_BattleEnemies>(tempEnemyClass, Location, Rotation);
 		enemiesRefArr.AddUnique(enemyTemp); // 进入该数组
 
-		// TBD - 绑定敌人回合结束后的回调
-
-		// TBD - 绑定敌人被击败后的回调
+		//绑定敌人回合结束后的回调
+		enemyTemp->OnEnemyTurnEnd.AddDynamic(this,&ATBG_BattleManager::EnemyTurnEnd);
+		// 绑定敌人被击败后的回调
+		enemyTemp->OnEnemyDeath.AddDynamic(this, &ATBG_BattleManager::EnemyDeath);
 	}
 }
 
@@ -360,6 +376,8 @@ void ATBG_BattleManager::CalculateActionValue()
 		else
 		{
 			//TBD 被消灭的敌人解绑对应函数
+			ArrElement->OnEnemyDeath.RemoveDynamic(this, &ATBG_BattleManager::EnemyDeath);
+			ArrElement->OnEnemyTurnEnd.RemoveDynamic(this, &ATBG_BattleManager::EnemyTurnEnd);
 			deadEnemyRefArr.Add(ArrElement);
 		}
 	}
@@ -372,8 +390,9 @@ void ATBG_BattleManager::CalculateActionValue()
 		}
 		else
 		{
-			//TBD 被消灭的角色解绑对应函数
+			//存入数组，隐藏图标
 			deadPlayerRefArr.Add(ArrElement);
+
 		}
 	}
 	//刷新数值，排除不可行动角色
@@ -419,7 +438,7 @@ void ATBG_BattleManager::CalculateActionValue()
 	}
 
 	//检查战斗是否结束
-	EBattleFlags CurBattleFlag = EBattleFlags::BF_EMAX;
+
 	CurBattleFlag = CheckGameOver(local_Enemy_ActionValue, local_Player_ActionValue);
 	switch (CurBattleFlag)
 	{
@@ -431,9 +450,11 @@ void ATBG_BattleManager::CalculateActionValue()
 			break;
 		case EBattleFlags::BF_PlayerWin:
 			BattleEnd(CurBattleFlag);
+			return;
 			break;
 		case EBattleFlags::BF_EnemyWin:
 			BattleEnd(CurBattleFlag);
+			return;
 			break;
 		default:
 			return;
@@ -549,7 +570,6 @@ void ATBG_BattleManager::CalculateActionValue_EP()
 	}
 
 	//检查战斗是否结束
-	EBattleFlags CurBattleFlag = EBattleFlags::BF_EMAX;
 	CurBattleFlag = CheckGameOver(local_Enemy_ActionValue, local_Player_ActionValue);
 	switch (CurBattleFlag)
 	{
@@ -573,8 +593,11 @@ void ATBG_BattleManager::CalculateActionValue_EP()
 
 EBattleFlags ATBG_BattleManager::CheckGameOver(TMap<ATBG_Character_BattleEnemies*, float> eArr, TMap<ATBG_Character_BattlePlayer*, float> pArr)
 {
-	if (eArr.Num() == 0)return EBattleFlags::BF_PlayerWin;
-	if (pArr.Num() == 0)return EBattleFlags::BF_PlayerWin;
+	// 若敌人数组为0，则玩家胜利
+	if (eArr.Num() == 0) return EBattleFlags::BF_PlayerWin;
+	// 若玩家数组为0，则敌人胜利
+	if (pArr.Num() == 0) return EBattleFlags::BF_EnemyWin;
+	// 否则继续战斗循环
 	return EBattleFlags::BF_ContinueBattle;
 }
 
@@ -1209,6 +1232,108 @@ void ATBG_BattleManager::CameraForBuffSelections()
 				SetViewTargetWithBlend(ActivePlayer);
 		}
 	}
+}
+
+void ATBG_BattleManager::EnemyDeath(ATBG_Character_BattleEnemies* enemyRef, AActor* causerRef)
+{
+	
+	ATBG_Character_BattlePlayer* tempPlayerRef = Cast<ATBG_Character_BattlePlayer>(causerRef);
+	if (tempPlayerRef!=nullptr)
+	{
+		tempPlayerRef->HandleEP(EAttackType::AT_EMAX, true, 10.f);
+	}
+}
+
+void ATBG_BattleManager::EnemyTurnEnd(ATBG_Character_BattleEnemies* enemyRef)
+{
+	TurnEnd(enemyRef, true);
+}
+
+void ATBG_BattleManager::HandleDelays()
+{
+	//去除战斗UI
+	BattleLayOut->RemoveFromParent();
+	BattleLayOut = nullptr;
+	//镜头变暗
+	GetWorld()->GetTimerManager().SetTimer(BattleEndCameraStartingFadeTimerHandle, this, &ATBG_BattleManager::BattleEndCameraStartingFade, 1.0f, false);
+}
+
+void ATBG_BattleManager::BattleEndCameraStartingFade()
+{
+	UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)
+		->StartCameraFade(0.f, 1.f, 1.f,FColor::Black,false,true);
+	GetWorld()->GetTimerManager().SetTimer(CleanBattleFieldTimerHandle, this, &ATBG_BattleManager::CleanBattleField, 1.0f, false);
+}
+
+void ATBG_BattleManager::CleanBattleField()
+{
+	ActivePlayer = nullptr;
+	ActiveEnemy = nullptr;
+	indexForLockedTarget = 0;
+	for (auto ArrElement : playerRefArr)
+	{
+		ArrElement->Destroy();
+	}
+	for (auto ArrElement : enemiesRefArr)
+	{
+		ArrElement->Destroy();
+	}
+	for (auto ArrElement : deadEnemyRefArr)
+	{
+		ArrElement->Destroy();
+	} 
+	for (auto ArrElement : deadPlayerRefArr)
+	{
+		ArrElement->Destroy();
+	}
+
+	switch (CurBattleFlag)
+	{
+	case EBattleFlags::BF_EMAX:
+		break;
+	case EBattleFlags::BF_ContinueBattle:
+		break;
+	case EBattleFlags::BF_PlayerWin:
+		PlayerWin();
+		break;
+	case EBattleFlags::BF_EnemyWin:
+		EnemyWin();
+		break;
+	default:
+		break;
+	}
+}
+
+void ATBG_BattleManager::PlayerWin()
+{
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetViewTargetWithBlend(ExplorePlayerRef);
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->Possess(ExplorePlayerRef);
+	BattlePawn->Destroy();
+	BattlePawn = nullptr;
+	ExploreEnemyRef->Destroy();
+	ExplorePlayerRef->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	ExplorePlayerRef->FinishBattle();
+	// 回复正常视野
+	UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0)->
+		StartCameraFade(1.0f, 0.0f, 0.5f, FColor::Black, false, false);
+}
+
+void ATBG_BattleManager::EnemyWin()
+{
+	if(FailedSFX != nullptr)
+	{
+		UGameplayStatics::PlaySound2D(GetWorld(), FailedSFX);
+	}
+	 
+	// 延迟3s后退出游戏（也可以是主界面、取档界面等）
+	GetWorld()->GetTimerManager().SetTimer(ExitGameTimerHandle, this,
+		&ATBG_BattleManager::ExitGame, 1.1f, false);
+}
+
+void ATBG_BattleManager::ExitGame()
+{
+	// 退出游戏
+	GetWorld()->GetFirstPlayerController()->ConsoleCommand("quit");
 }
 
 void ATBG_BattleManager::BeginPlay()

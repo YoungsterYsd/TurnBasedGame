@@ -88,6 +88,24 @@ public:
 
 	//Camera
 	void CameraForBuffSelections();
+
+	//EnemyDeath
+	UFUNCTION()
+	void EnemyDeath(ATBG_Character_BattleEnemies* enemyRef, AActor* causerRef);
+	UFUNCTION()
+	void EnemyTurnEnd(ATBG_Character_BattleEnemies* enemyRef);
+
+	//Battle Handle;
+	UFUNCTION()
+	void HandleDelays();
+	UFUNCTION()
+	void BattleEndCameraStartingFade();
+	UFUNCTION()
+	void CleanBattleField();
+	void PlayerWin();
+	void EnemyWin();
+	void ExitGame();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime)override;
@@ -107,8 +125,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	USoundBase* UnableSFX;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	USoundBase* FailedSFX;
 
 	UBattleLayOut* BattleLayOut;
+	EBattleFlags CurBattleFlag{ EBattleFlags::BF_EMAX };
 	void LoadBattleUI();
 
 	ATBG_Character_ExploreEnemies* ExploreEnemyRef = nullptr;
@@ -128,7 +149,12 @@ public:
 	TArray<AActor*> playerSpawnPointsArr;
 
 	ATBG_BattlePawn* BattlePawn;
-	FTimerHandle DisplayEnemyTimeHandle;
+
+	FTimerHandle DisplayEnemyTimerHandle;
+	FTimerHandle HandleDelaysTimerHandle;
+	FTimerHandle BattleEndCameraStartingFadeTimerHandle;
+	FTimerHandle CleanBattleFieldTimerHandle;
+	FTimerHandle ExitGameTimerHandle;
 	//处理活跃中的角色
 	ATBG_Character_BattleEnemies* ActiveEnemy;
 	ATBG_Character_BattlePlayer* ActivePlayer;

@@ -193,7 +193,7 @@ void ATBG_Character_BattleEnemies::PlayStunVFX()
 	if (StunVFXComp != nullptr) return;
 
 	FVector l_loc = FVector(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + stunVFXHeight);
-	StunVFXComp = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), StunVFX, l_loc);
+	StunVFXComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), StunVFX, FVector(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + stunVFXHeight));
 }
 
 void ATBG_Character_BattleEnemies::SetDelayedTarget(bool delay, ATBG_Character_BattlePlayer* target)
@@ -298,8 +298,21 @@ void ATBG_Character_BattleEnemies::Int_HitHandle(AActor* causer, float HP_Dmg, f
 	// 是否死亡
 	if (curHP <= 0)
 	{
-		// TBD - 死亡逻辑
+		//  - 死亡逻辑
+		bDead = true;
+		PlaySpecificAnim("Die");
+		HeadBar->SetVisibility(false);
 
+		ExtraActionWhenStun(true);
+		//组件有效则删除
+		if (StunVFXComp != nullptr)
+		{
+			StunVFXComp->DestroyComponent();
+			StunVFXComp = nullptr;
+		}
+		//死亡事件派发
+		OnEnemyDeath.Broadcast(this, dmgCauser);
+		//OnEnemyTurnEnd.Broadcast(this);
 	}
 	else
 	{

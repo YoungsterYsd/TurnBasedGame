@@ -157,3 +157,17 @@ void ATBG_Character_ExplorePlayer::FindEnemyInfo(AActor* InEnemy)
 	ATBG_Character_ExploreEnemies* HitTarget = Cast<ATBG_Character_ExploreEnemies>(InEnemy);
 	HitTarget->EnterBattleThroughBM(this);
 }
+
+void ATBG_Character_ExplorePlayer::FinishBattle()
+{
+	//重写显示探索UI 
+	//x秒后再进入战斗，笔迷案连续战斗
+		// 1.8s后再进入战斗，避免连续进入战斗
+	GetWorld()->GetTimerManager().SetTimer(ResetBattleBooleanTimerHandle,
+		this, &ATBG_Character_ExplorePlayer::ResetBattleBoolean, 1.8f, false);
+}
+
+void ATBG_Character_ExplorePlayer::ResetBattleBoolean()
+{
+	bInBattle = false;
+}

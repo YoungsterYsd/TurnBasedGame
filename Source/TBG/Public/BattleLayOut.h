@@ -11,6 +11,7 @@
  */
 class ATBG_BattleManager;
 class ATBG_Character_BattlePlayer;
+class ATBG_Character_BattleEnemies;
 UCLASS()
 class TBG_API UBattleLayOut : public UUserWidget
 {
@@ -31,7 +32,12 @@ public:
 	void HandlePhaseHintFromCpp(ATBG_Character_BattlePlayer* playerRef, EAttackType ATKType);
 
 	UFUNCTION(BlueprintImplementableEvent)
+	void HandlePhaseHintForEnemyTurn(ATBG_Character_BattleEnemies* enemyRef,bool bfixedCamera, EAttackType ATKType);
+
+	UFUNCTION(BlueprintImplementableEvent)
 	void HideATKButtons();
 	UFUNCTION(BlueprintImplementableEvent)
 	void RefreshUltimateOrder(const TArray<ATBG_Character_BattlePlayer*>& playerCharRefs);
+	UFUNCTION(BlueprintImplementableEvent)
+	void BattleOverHint();
 };

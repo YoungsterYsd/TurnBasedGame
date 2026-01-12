@@ -29,11 +29,16 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	ATBG_PlayerControllerBase* GetTBGPlayerController(){ return PC;}
+	void FinishBattle();
+	void ResetBattleBoolean();
 public:
 	UPROPERTY(EditAnywhere, Category = "Inputs")
 	UInputMappingContext* IMC_SR;
-	bool bOpenTeamUI;
-	bool bATK;
+	bool bOpenTeamUI = false;
+	bool bATK = false;
+	bool bInBattle = false;
+	FTimerHandle ResetBattleBooleanTimerHandle;
+
 	//记录我方站位和敌人信息
 	UPROPERTY(EditDefaultsOnly, Category = "Presets")
 	TMap<int32, TSubclassOf<ATBG_Character_BattlePlayer>> PlayerTeamInfo;
@@ -67,6 +72,7 @@ protected:
 	//战斗模式切换
 	void MeleeDetectEnemy();
 	void FindEnemyInfo(AActor* InEnemy);
+
 private:
 	ATBG_PlayerControllerBase* PC = nullptr;
 

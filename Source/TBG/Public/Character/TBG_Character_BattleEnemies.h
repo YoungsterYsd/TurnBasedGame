@@ -10,6 +10,10 @@
 /**
  * 
  */
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnemyDeath, ATBG_Character_BattleEnemies*, enemyRef, AActor*, causerRef);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyTurnEnd, ATBG_Character_BattleEnemies*, enemyRef);
+
 class	UHeadBarUI;
 class 	UWidgetComponent;
 class	AFloatingIndicator;
@@ -42,7 +46,9 @@ public:
 	UNiagaraSystem* HitVFX;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Presets")
-	UParticleSystem* StunVFX;
+	UNiagaraSystem* StunVFX;
+
+	UNiagaraComponent* StunVFXComp;
 
 	UNiagaraComponent* NComp;
 
@@ -57,6 +63,13 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Presets")
 	TSubclassOf<UCameraShakeBase> ultimateCS;
+
+
+	UPROPERTY(BlueprintAssignable, Category = "Dispatcher")
+	FOnEnemyDeath OnEnemyDeath;
+
+	UPROPERTY(BlueprintAssignable, Category = "Dispatcher")
+	FOnEnemyTurnEnd OnEnemyTurnEnd;
 
 	void UpdateLockIcon(bool bHide);
 	void InitializeCharData();
@@ -96,7 +109,6 @@ public:
 	AActor* dmgCauser;
 	float receivedHPDmg;
 	int32 recoverFromStunTurns = 0;
-	UParticleSystemComponent* StunVFXComp;
 	bool bDelayed_ATK = false;
 	ATBG_Character_BattlePlayer* delayedTarget;
 
