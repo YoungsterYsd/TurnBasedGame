@@ -10,6 +10,7 @@
 /**
  * 
  */
+class	UHeadBarUI;
 class 	UWidgetComponent;
 UCLASS()
 class TBG_API ATBG_Character_BattleEnemies : public ATBG_CharacterBase_Battle
@@ -33,7 +34,21 @@ public:
 	void UpdateLockIcon(bool bHide);
 	virtual void Int_RefreshActionValueBySpeed() override;
 	virtual void Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info) override;
+	void InitializeCharData();
 
+	float curThoughness;
+	float maxThoughness;
+	float curHP;
+	float maxHP;
+	float stunVFXHeight;
+	FVector originLocaiton;
+	TArray<ECombatType> Weaknesses;
+	TMap<FString, UAnimMontage*> animMontages;
+	TMap<FString, FEnemyATKInfo> validATKStr;
+	TMap<FString, float> choices;
+	UHeadBarUI* HeadBarUI;
+
+	void UpdateHeadBar();
 protected:
 	virtual void BeginPlay() override;
 
