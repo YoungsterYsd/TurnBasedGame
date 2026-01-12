@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayFrame/TBG_CharacterBase.h"
+#include "Interface/ExploreInterface.h"
 #include "TBG_Character_ExplorePlayer.generated.h"
 
 /**
@@ -18,8 +19,10 @@ class USpringArmComponent;
 class UCameraComponent;
 class ATBG_Character_BattlePlayer;
 
+class UAnimMontage;
+
 UCLASS()
-class TBG_API ATBG_Character_ExplorePlayer : public ATBG_CharacterBase
+class TBG_API ATBG_Character_ExplorePlayer : public ATBG_CharacterBase,public IExploreInterface
 {
 	GENERATED_BODY()
 	
@@ -31,6 +34,7 @@ public:
 	ATBG_PlayerControllerBase* GetTBGPlayerController(){ return PC;}
 	void FinishBattle();
 	void ResetBattleBoolean();
+
 public:
 	UPROPERTY(EditAnywhere, Category = "Inputs")
 	UInputMappingContext* IMC_SR;
@@ -42,6 +46,9 @@ public:
 	//记录我方站位和敌人信息
 	UPROPERTY(EditDefaultsOnly, Category = "Presets")
 	TMap<int32, TSubclassOf<ATBG_Character_BattlePlayer>> PlayerTeamInfo;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Presets")
+	UAnimMontage* ATKMontage;
 
 protected:
 	virtual void BeginPlay() override;
@@ -72,6 +79,7 @@ protected:
 	//战斗模式切换
 	void MeleeDetectEnemy();
 	void FindEnemyInfo(AActor* InEnemy);
+	virtual void Int_E_ATK(bool bStart) override;
 
 private:
 	ATBG_PlayerControllerBase* PC = nullptr;

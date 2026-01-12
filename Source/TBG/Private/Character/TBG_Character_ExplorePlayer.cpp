@@ -116,9 +116,9 @@ void ATBG_Character_ExplorePlayer::TryAttack_Started(const FInputActionValue& va
 	if (!bOpenTeamUI && !bATK)
 	{
 		bATK = true;
-		//TODO 切换武器位置
-		//TODo 播放蒙太奇
-		MeleeDetectEnemy();
+		// 播放蒙太奇
+		PlayAnimMontage(ATKMontage);
+		//MeleeDetectEnemy();
 	}
 }
 
@@ -137,7 +137,7 @@ void ATBG_Character_ExplorePlayer::MeleeDetectEnemy()
 	Params.AddIgnoredActor(this);
 	GetWorld()->SweepMultiByObjectType(OutResults, Start, Start, FQuat(0, 0, 0, 0), ObjQueryParams, MyShpere,Params);
 	//debug用
-	DrawDebugSphere(GetWorld(), Start, 150.f, 15, FColor::Cyan, false,5.0f, 0.f, 4.f);
+	//DrawDebugSphere(GetWorld(), Start, 150.f, 15, FColor::Cyan, false,5.0f, 0.f, 4.f);
 
 	//如果碰撞到，则进入战斗
 	for (auto Ele : OutResults)
@@ -146,7 +146,6 @@ void ATBG_Character_ExplorePlayer::MeleeDetectEnemy()
 		if (DetectedActor != nullptr)
 		{
 			FindEnemyInfo(DetectedActor);
-			//TOdo,进入战斗
 			return;
 		}
 	}
@@ -158,11 +157,23 @@ void ATBG_Character_ExplorePlayer::FindEnemyInfo(AActor* InEnemy)
 	HitTarget->EnterBattleThroughBM(this);
 }
 
+void ATBG_Character_ExplorePlayer::Int_E_ATK(bool bStart)
+{
+	if (bStart)
+	{
+		MeleeDetectEnemy();
+	}
+	else
+	{
+		bATK = false;
+	}
+}
+
 void ATBG_Character_ExplorePlayer::FinishBattle()
 {
-	//重写显示探索UI 
+	//重新显示探索UI 
 	//x秒后再进入战斗，笔迷案连续战斗
-		// 1.8s后再进入战斗，避免连续进入战斗
+	// 1.8s后再进入战斗，避免连续进入战斗
 	GetWorld()->GetTimerManager().SetTimer(ResetBattleBooleanTimerHandle,
 		this, &ATBG_Character_ExplorePlayer::ResetBattleBoolean, 1.8f, false);
 }
@@ -171,3 +182,4 @@ void ATBG_Character_ExplorePlayer::ResetBattleBoolean()
 {
 	bInBattle = false;
 }
+
