@@ -12,6 +12,7 @@
 #include "NiagaraSystem.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Actor/FloatingIndicator.h"
 
 ATBG_Character_BattlePlayer::ATBG_Character_BattlePlayer()
 {
@@ -246,7 +247,7 @@ void ATBG_Character_BattlePlayer::HandleEP(EAttackType ATKType, bool bDirect, fl
 		l_deltaEP = 8.0f;
 		break;
 	case EAttackType::AT_Ultimate:
-		l_deltaEP = 5.0f;
+		l_deltaEP = 0.0f;
 		break;
 	case EAttackType::AT_DelayATK_E:
 		break;
@@ -352,6 +353,82 @@ void ATBG_Character_BattlePlayer::MultipleATK(TArray<AActor*> targets, bool bCou
 	targetLocation = targetActor->GetActorLocation() + targetActor->GetActorForwardVector() * 150.f;
 	PlayAnimationAndTimeline();
 
+}
+
+void ATBG_Character_BattlePlayer::HandleShieldAndHP(float dmg)
+{
+	// 有套盾先扣盾值，盾值不够再扣血，无套盾直接扣血
+	if (curToughness > 0.0f)
+	{
+		curToughness = curToughness - dmg;
+
+		// 生成白色数字
+		// 需传入显示的数字，故使用延迟生成
+		FTransform CustomTransform3;
+		CustomTransform3.GetLocation() = GetActorLocation();
+		CustomTransform3.GetRotation() = FQuat(0, 0, 0, 0);
+		CustomTransform3.GetScale3D() = FVector(1, 1, 1);
+		AFloatingIndicator* l_FI3 = GetWorld()->SpawnActorDeferred<AFloatingIndicator>(
+			FloatingIndicatorClass, CustomTransform3);
+		l_FI3->floatingNum = dmg;
+		l_FI3->specifiedColor = FColor::White;
+		l_FI3->txtLocation = GetActorLocation();
+		l_FI3->FinishSpawning(CustomTransform3);
+
+		// 扣除后，是否还有剩余盾值
+		if (curToughness > 0.0f)
+		{
+			// 三月七机制，发动攻击
+		}
+		else
+		{
+			// 如果没有，则把curThougness不足的部分加算到血量上
+			// curToughness <= 0;
+			curHP = curHP + curToughness;
+
+			// 生成红色数字
+			FTransform CustomTransform1;
+			CustomTransform1.GetLocation() = GetActorLocation();
+			CustomTransform1.GetRotation() = FQuat(0, 0, 0, 0);
+			CustomTransform1.GetScale3D() = FVector(1, 1, 1);
+			AFloatingIndicator* l_FI1 = GetWorld()->SpawnActorDeferred<AFloatingIndicator>(
+				FloatingIndicatorClass, CustomTransform1);
+			l_FI1->floatingNum = curToughness * (-1.0f);
+			l_FI1->specifiedColor = FColor::Red;
+			l_FI1->txtLocation = GetActorLocation();
+			l_FI1->FinishSpawning(CustomTransform1);
+
+			// 播放血量减少时的受击声音
+			//UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSFX, GetActorLocation());
+
+			// 重置盾值相关的变量值
+			curToughness = 0.0f;
+			shieldDuration = 0;
+			maxToughness = 0.0f;
+			Tags.Remove(*shieldTag);
+
+			// TBD - 删除盾的特效Actor
+		}
+	}
+	else
+	{
+		curHP = FMath::Clamp(curHP - dmg, 0.0f, maxHP);
+
+		// 生成红色数字
+		FTransform CustomTransform2;
+		CustomTransform2.GetLocation() = GetActorLocation();
+		CustomTransform2.GetRotation() = FQuat(0, 0, 0, 0);
+		CustomTransform2.GetScale3D() = FVector(1, 1, 1);
+		AFloatingIndicator* l_FI2 = GetWorld()->SpawnActorDeferred<AFloatingIndicator>(
+			FloatingIndicatorClass, CustomTransform2);
+		l_FI2->floatingNum = dmg;
+		l_FI2->specifiedColor = FColor::Red;
+		l_FI2->txtLocation = GetActorLocation();
+		l_FI2->FinishSpawning(CustomTransform2);
+
+		// 播放血量减少时的受击声音
+		//UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSFX, GetActorLocation());
+	}
 }
 
 void ATBG_Character_BattlePlayer::BeginPlay()
@@ -471,6 +548,53 @@ void ATBG_Character_BattlePlayer::Int_SetATK(EAttackType ATKType, int32 AttackCo
 
 void ATBG_Character_BattlePlayer::Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info)
 {
+	//受击逻辑
+	// 受击逻辑
+	float l_RealRecievedDmg = HP_Dmg;
+	EBuffTypes l_BuffType = buff_Info.BuffType;
+	switch (l_BuffType)
+	{
+	case EBuffTypes::BT_EMAX:
+
+		// 来自敌人攻击时再考虑防御力；增益魔法不考虑防御力
+		l_RealRecievedDmg = HP_Dmg * (200.0f / (200.0f + playerAtr.Defend));
+
+		// 处理盾值和血量
+		HandleShieldAndHP(l_RealRecievedDmg);
+
+		// 判断播放受击动画还是击败动画（可复活）
+		if (curHP <= 0.0f)
+		{
+			bDead = true;
+			PlaySpecifiedAnim("Die");
+		}
+		else
+		{
+			PlaySpecifiedAnim("Hit_F");
+			// 每受击1次增加能量，设定增加5点
+			HandleEP(EAttackType::AT_EMAX, true, 5.0f);
+		}
+		break;
+	case EBuffTypes::BT_Shield:
+		// TBD - 盾值不可叠加，但重复被释放可刷新持续时间
+
+		break;
+	case EBuffTypes::BT_Heal:
+		// TBD - 治疗
+
+		break;
+	case EBuffTypes::BT_Resurrection:
+		// TBD - 复活逻辑
+
+		break;
+	case EBuffTypes::BT_MoveForward:
+		// TBD - 行动提前（拉条）
+
+
+		break;
+	default:
+		break;
+	}
 
 }
 

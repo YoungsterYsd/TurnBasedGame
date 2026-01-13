@@ -280,6 +280,7 @@ EAttackType ATBG_Character_BattleEnemies::ActionDecision(const TArray<ATBG_Chara
 	if (bRadialATK)
 	{
 		// TBD - 范围攻击
+		currentTargetsArr = l_playerRef;
 		RadialATK(l_playerRef);
 
 		// 如果切换视角，切换至受击的玩家角色视角
@@ -298,6 +299,7 @@ EAttackType ATBG_Character_BattleEnemies::ActionDecision(const TArray<ATBG_Chara
 		if (bDelayed_ATK)
 		{
 			// TBD - 延迟攻击
+			currentTarget = delayedTarget;
 			SingleATK(delayedTarget);
 
 			// 延迟攻击已结束，重置相关bool
@@ -332,7 +334,9 @@ EAttackType ATBG_Character_BattleEnemies::ActionDecision(const TArray<ATBG_Chara
 
 			if (l_ShieldPlayerRef != nullptr)
 			{
-				// TBD - 有套盾对象
+				// 有套盾对象
+				delayedTarget = l_ShieldPlayerRef;
+				currentTarget = l_ShieldPlayerRef;
 				SingleATK(l_ShieldPlayerRef);
 
 				// 如果切换视角，切换至受击的玩家角色视角
@@ -356,6 +360,8 @@ EAttackType ATBG_Character_BattleEnemies::ActionDecision(const TArray<ATBG_Chara
 				if (l_TargetActor == nullptr) return EAttackType::AT_EMAX;
 
 				// 单体攻击
+				delayedTarget = l_TargetActor;
+				currentTarget = l_TargetActor;
 				SingleATK(l_TargetActor);
 
 				// 如果切换视角，切换至受击的玩家角色视角
@@ -478,7 +484,7 @@ void ATBG_Character_BattleEnemies::Int_HitHandle(AActor* causer, float HP_Dmg, f
 		if (StunVFXComp != nullptr)
 		{
 			StunVFXComp->DestroyComponent();
-			StunVFXComp = nullptr;
+			//StunVFXComp = nullptr;
 		}
 		//死亡事件派发
 		OnEnemyDeath.Broadcast(this, dmgCauser);
@@ -510,6 +516,39 @@ void ATBG_Character_BattleEnemies::Int_HitHandle(AActor* causer, float HP_Dmg, f
 		}
 	}
 }
+void ATBG_Character_BattleEnemies::Int_SetATK(EAttackType ATKType, int32 AttackCountInOneCycle)
+{
+	FBuffInfo tempBuffInfo;
+	tempBuffInfo.BuffRatio = 0.0f;
+	tempBuffInfo.BuffType = EBuffTypes::BT_EMAX;
+
+	if (ATKType == EAttackType::AT_DelayATK_E)
+	{
+		SetDelayedTarget(true, currentTarget);
+	}
+	else
+	{
+		if (bRadialATK)
+		{
+			for (auto ArrayElem : currentTargetsArr)
+			{
+				ICombatInterface* tempInterface = Cast<ICombatInterface>(ArrayElem);
+				if (tempInterface)
+				{
+					tempInterface->Int_HitHandle(this, (totalATK / AttackCountInOneCycle), 0.0f, tempBuffInfo);
+				}
+			}
+		}
+		else
+		{
+			ICombatInterface* tempInterface = Cast<ICombatInterface>(currentTarget);
+			if (tempInterface)
+			{
+				tempInterface->Int_HitHandle(this, (totalATK / AttackCountInOneCycle), 0.0f, tempBuffInfo);
+			}
+		}
+	}
+}
 void ATBG_Character_BattleEnemies::InitializeCharData()
 {
 	FString s = DataRow.ToString();
@@ -528,6 +567,7 @@ void ATBG_Character_BattleEnemies::InitializeCharData()
 	stunVFXHeight = enemyInfo.StunVFXHeight;
 	choices = enemyInfo.Choices;
 	originLocaiton = GetActorLocation();
+	totalATK = enemyInfo.Attack;
 	// 初始化行动值
 	Int_RefreshActionValueBySpeed();
 	// 初始化头部状态条

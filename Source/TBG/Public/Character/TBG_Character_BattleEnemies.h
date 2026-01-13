@@ -107,11 +107,13 @@ public:
 
 	virtual void Int_RefreshActionValueBySpeed() override;
 	virtual void Int_HitHandle(AActor* causer, float HP_Dmg, float Toughness_Dmg, FBuffInfo buff_Info) override;
+	virtual void Int_SetATK(EAttackType ATKType, int32 AttackCountInOneCycle) override;
 
 	float curThoughness;
 	float maxThoughness;
 	float curHP;
 	float maxHP;
+	float totalATK;
 	float stunVFXHeight;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FVector originLocaiton;
@@ -128,6 +130,8 @@ public:
 	ATBG_Character_BattlePlayer* delayedTarget;
 	//用于攻击行为的选择
 	bool bRadialATK;
+	ATBG_Character_BattlePlayer* currentTarget;
+	TArray<ATBG_Character_BattlePlayer*> currentTargetsArr;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "BP")
 	FString actionAnimKey;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BP")

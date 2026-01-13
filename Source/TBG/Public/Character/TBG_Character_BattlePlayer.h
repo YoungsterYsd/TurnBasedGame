@@ -17,6 +17,7 @@ class	UCurveFloat;
 struct	FTimeline;
 class	USpringArmComponent;
 class	UNiagaraSystem;
+class	AFloatingIndicator;
 UCLASS()
 class TBG_API ATBG_Character_BattlePlayer : public ATBG_CharacterBase_Battle
 {
@@ -35,6 +36,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
 	UWidgetComponent* MarkedIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Presets")
+	TSubclassOf<AFloatingIndicator> FloatingIndicatorClass;
 
 	void UpdateLockIcon(bool bHide);
 	virtual void Int_RefreshActionValueBySpeed() override;
@@ -66,6 +70,7 @@ public:
 
 	void SingleATK(AActor* target,bool bCounsumeTurn,bool bMelee,EAttackType ATKType);
 	void MultipleATK(TArray<AActor*> targets, bool bCounsumeTurn, bool bMelee, EAttackType ATKType);
+	void HandleShieldAndHP(float dmg);
 protected:
 	virtual void BeginPlay() override;
 
@@ -108,7 +113,9 @@ public:
 	TArray<AActor*> currentTargets;
 	
 	float		attackCountIOC;
+	int32		shieldDuration = 0;
 	FBuffInfo	buffInfo;
+	FString		shieldTag = FString("tag_shield");
 
 	FORCEINLINE USpringArmComponent* GetCameraBoom() { return CameraBoom; }
 	virtual void Int_SetATK(EAttackType ATKType, int32 AttackCountInOneCycle) override;

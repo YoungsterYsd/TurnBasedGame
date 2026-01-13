@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Character/TBG_Character_ExploreEnemies.h"
 #include "Character/TBG_Character_BattlePlayer.h"
+#include "Kismet\GameplayStatics.h"
 
 ATBG_Character_ExplorePlayer::ATBG_Character_ExplorePlayer()
 {
@@ -118,6 +119,7 @@ void ATBG_Character_ExplorePlayer::TryAttack_Started(const FInputActionValue& va
 		bATK = true;
 		// ≤•∑≈√…Ã´∆Ê
 		PlayAnimMontage(ATKMontage);
+
 		//MeleeDetectEnemy();
 	}
 }

@@ -957,7 +957,7 @@ void ATBG_BattleManager::SwitchAndHideOtherPlayerChars(bool bHideOther, ATBG_Cha
 	}
 	activePlayer->SetHiddenForPlayer(false);
 
-	//自动切换视角
+	//自动切换视角 
 	UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetViewTargetWithBlend(activePlayer);
 }
 
@@ -1135,15 +1135,15 @@ void ATBG_BattleManager::EnterUltimate(int32 playerSPIndex)
 	//检查能量值是否已满
 	//满足则消耗能量，不满足则释放失败。
 
-	//bool bFullEP = (speciedPlayerChar->curEnergy / speciedPlayerChar->maxEnergy) >= 1.0f;
-	//if (!bFullEP)
-	//{
-	//	UGameplayStatics::SpawnSound2D(GetWorld(),UnableSFX);
-	//	return;
-	//}
-	//float l_AllEp = speciedPlayerChar->maxEnergy*(-1.0f);
-	////消耗完能量后，加入大招序列，刷新战斗UI
-	//speciedPlayerChar->HandleEP(EAttackType::AT_EMAX, true, l_AllEp);
+	bool bFullEP = (speciedPlayerChar->curEnergy / speciedPlayerChar->maxEnergy) >= 1.0f;
+	if (!bFullEP)
+	{
+		UGameplayStatics::SpawnSound2D(GetWorld(),UnableSFX);
+		return;
+	}
+	float l_AllEp = speciedPlayerChar->maxEnergy*(-1.0f);
+	//消耗完能量后，加入大招序列，刷新战斗UI
+	speciedPlayerChar->HandleEP(EAttackType::AT_EMAX, true, l_AllEp);
 
 	ultimatePlayerQueue.Add(speciedPlayerChar);
 	BattleLayOut->RefreshUltimateOrder(ultimatePlayerQueue);
