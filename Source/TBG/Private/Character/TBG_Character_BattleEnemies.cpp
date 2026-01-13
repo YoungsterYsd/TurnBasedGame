@@ -11,6 +11,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Actor/FloatingIndicator.h"
 #include "Camera/CameraShakeBase.h"
+#include "Kismet\KismetMathLibrary.h"
 ATBG_Character_BattleEnemies::ATBG_Character_BattleEnemies()
 {
 	HeadBar = CreateDefaultSubobject<UWidgetComponent>("Head Bar");
@@ -222,8 +223,108 @@ void ATBG_Character_BattleEnemies::RecoverFromStun()
 	if (StunVFXComp != nullptr)
 	{
 		StunVFXComp->DestroyComponent();
-		StunVFXComp = nullptr;
+		//StunVFXComp = nullptr;
 	}
+}
+
+EAttackType ATBG_Character_BattleEnemies::ActionDecision(const TArray<ATBG_Character_BattlePlayer*> playersRef)
+{
+	
+	TArray<ATBG_Character_BattlePlayer*> l_playerRef = playersRef;
+	if (delayedTarget != nullptr)
+	{
+		if (!delayedTarget->bDead && bDelayed_ATK)
+		{
+			// 优先延迟攻击
+			actionAnimKey = "DelayedATK";
+		}
+		else
+		{
+			actionAnimKey = RandomActionByRatio();
+		}
+	}
+	else
+	{
+		actionAnimKey = RandomActionByRatio();
+	}
+
+	if (actionAnimKey == "None") return EAttackType::AT_EMAX;
+
+	// 是否范围攻击？远程攻击？攻击距离是？
+	if (!validATKStr.Contains(actionAnimKey)) return EAttackType::AT_EMAX;
+	bRadialATK = validATKStr.Find(actionAnimKey)->bRadialAction;
+	bRangeATK = validATKStr.Find(actionAnimKey)->bRangeAction;
+	ATKDistance = int32(validATKStr.Find(actionAnimKey)->ATK_Distance);
+
+	if (bRadialATK)
+	{
+		// TBD - 范围攻击
+
+
+		return EAttackType::AT_SkillATK;
+	}
+	else
+	{
+		if (bDelayed_ATK)
+		{
+			// TBD - 延迟攻击
+
+
+			return EAttackType::AT_DelayATK_E;
+		}
+		else
+		{
+			// 普通单体攻击时，优先攻击带盾（嘲讽效果）的玩家角色
+			// 具体表现为查找特定tag
+			ATBG_Character_BattlePlayer* l_ShieldPlayerRef = nullptr;
+
+			for (auto ArrayElem : l_playerRef)
+			{
+				if (ArrayElem->ActorHasTag("tag_shield"))
+				{
+					l_ShieldPlayerRef = ArrayElem;
+				}
+			}
+
+			if (l_ShieldPlayerRef != nullptr)
+			{
+				// TBD - 有套盾对象
+
+
+				return EAttackType::AT_NormalATK;
+			}
+			else
+			{
+				// TBD - 无套盾对象
+
+
+				return EAttackType::AT_NormalATK;
+			}
+		}
+	}
+	
+	return EAttackType();
+}
+
+FString ATBG_Character_BattleEnemies::RandomActionByRatio()
+{
+	// 按照概率选择攻击招式（在DataTable中设置概率，至少有一个攻击应为1.0概率，兜底）
+	TArray<FString> l_StrChoices;
+	choices.GenerateKeyArray(l_StrChoices);
+	for (auto ArrayElem : l_StrChoices)
+	{
+		//必然存在，故无需用Contain检查；若为空，则报错
+		if (!choices.Contains(ArrayElem)) return "None";
+
+		bool l_selected = UKismetMathLibrary::RandomBoolWithWeight(*(choices.Find(ArrayElem)));
+		if (l_selected)
+		{
+			// 立刻跳出
+			return ArrayElem;
+		}
+	}
+
+	return "None";
 }
 
 bool ATBG_Character_BattleEnemies::CheckElementATK(ECombatType cType)

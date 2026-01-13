@@ -85,6 +85,8 @@ public:
 	void PlayStunVFX();
 	void SetDelayedTarget(bool delay, ATBG_Character_BattlePlayer* target);
 	void RecoverFromStun();
+	EAttackType ActionDecision(const TArray<ATBG_Character_BattlePlayer*> playerRef);
+	FString RandomActionByRatio();
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void ExtraActionWhenStun(bool bEnter);
@@ -111,6 +113,12 @@ public:
 	int32 recoverFromStunTurns = 0;
 	bool bDelayed_ATK = false;
 	ATBG_Character_BattlePlayer* delayedTarget;
+	//用于攻击行为的选择
+	FString actionAnimKey;
+	bool bRadialATK;
+	bool bRangeATK;
+	int32 ATKDistance;
+
 
 	FTimerHandle dilationHandle;
 

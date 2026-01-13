@@ -114,7 +114,7 @@ void ATBG_BattleManager::HandleEnemyAttack(ATBG_Character_BattleEnemies* InEnemy
 	}
 	else
 	{
-		EAttackType enemyATKType = EAttackType::AT_NormalATK;
+		EAttackType enemyATKType = ActiveEnemy->ActionDecision(playerRefArr);
 		//¹¥»÷Âß¼­
 		BattleLayOut->HandlePhaseHintForEnemyTurn(ActiveEnemy, bBOSSFight, enemyATKType);
 	}
