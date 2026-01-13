@@ -218,6 +218,11 @@ void ATBG_Character_BattlePlayer::CalculateDmg(bool bBuff, float& hpDmg, float& 
 	toughnessDmg = f_toughnessDmg;
 }
 
+void ATBG_Character_BattlePlayer::SetDelayedMark(bool bNewVisibility)
+{
+	MarkedIcon->bHiddenInGame=!bNewVisibility;
+}
+
 void ATBG_Character_BattlePlayer::HandleEP(EAttackType ATKType, bool bDirect, float val)
 {
 	//更新能量ep

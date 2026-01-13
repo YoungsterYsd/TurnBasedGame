@@ -80,7 +80,13 @@ public:
 	void EnterDialtion();
 	void ResetDilation();
 	void PlayerCameraShake();
+
+	UFUNCTION(BlueprintCallable)
 	float PlaySpecificAnim(const FString& animKey);
+
+	UFUNCTION(BlueprintCallable)
+	void EndEnemyTurnFromBP(ATBG_Character_BattleEnemies* activeActorRef);
+
 	void EnterStun(int32 delayTurns);
 	void PlayStunVFX();
 	void SetDelayedTarget(bool delay, ATBG_Character_BattlePlayer* target);
@@ -90,6 +96,12 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void ExtraActionWhenStun(bool bEnter);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void SingleATK(ATBG_Character_BattlePlayer* target);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void RadialATK(const TArray<ATBG_Character_BattlePlayer*> &targets);
 
 	bool CheckElementATK(ECombatType cType);
 
@@ -101,6 +113,7 @@ public:
 	float curHP;
 	float maxHP;
 	float stunVFXHeight;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
 	FVector originLocaiton;
 	TArray<ECombatType> Weaknesses;
 	TMap<FString, UAnimMontage*> animMontages;
@@ -114,9 +127,12 @@ public:
 	bool bDelayed_ATK = false;
 	ATBG_Character_BattlePlayer* delayedTarget;
 	//用于攻击行为的选择
-	FString actionAnimKey;
 	bool bRadialATK;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category = "BP")
+	FString actionAnimKey;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BP")
 	bool bRangeATK;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "BP")
 	int32 ATKDistance;
 
 

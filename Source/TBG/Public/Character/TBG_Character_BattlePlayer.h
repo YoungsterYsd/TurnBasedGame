@@ -47,6 +47,7 @@ public:
 	void AfterPlayingMeleeATKAnim();
 	void GeneralPlayerAttackOver();
 	void CalculateDmg(bool bBuff, float& hpDmg, float& toughnessDmg);
+	void SetDelayedMark(bool bNewVisibility);
 
 	void HandleEP(EAttackType ATKType,bool bDirect,float val);
 	UFUNCTION(BlueprintCallable)

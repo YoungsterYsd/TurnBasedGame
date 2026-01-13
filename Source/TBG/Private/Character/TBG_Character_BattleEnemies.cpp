@@ -12,6 +12,8 @@
 #include "Actor/FloatingIndicator.h"
 #include "Camera/CameraShakeBase.h"
 #include "Kismet\KismetMathLibrary.h"
+#include "Utilities\CF_SR.h"
+#include "TBG_BattleManager.h"
 ATBG_Character_BattleEnemies::ATBG_Character_BattleEnemies()
 {
 	HeadBar = CreateDefaultSubobject<UWidgetComponent>("Head Bar");
@@ -160,6 +162,11 @@ float ATBG_Character_BattleEnemies::PlaySpecificAnim(const FString& animKey)
 	return l_animTime;
 }
 
+void ATBG_Character_BattleEnemies::EndEnemyTurnFromBP(ATBG_Character_BattleEnemies* activeActorRef)
+{
+	OnEnemyTurnEnd.Broadcast(activeActorRef);
+}
+
 void ATBG_Character_BattleEnemies::EnterStun(int32 delayTurns)
 {
 	// 晕眩持续delayTurns回合，默认1回合
@@ -199,7 +206,21 @@ void ATBG_Character_BattleEnemies::PlayStunVFX()
 
 void ATBG_Character_BattleEnemies::SetDelayedTarget(bool delay, ATBG_Character_BattlePlayer* target)
 {
-	//TBD 后续再做
+	// BOSS战时需设置
+	bDelayed_ATK = delay;
+	if (target == nullptr) return;
+	// 设置玩家角色的锁定图标
+	target->SetDelayedMark(bDelayed_ATK);
+
+	// 根据锁定的布尔值，重置延迟锁定目标
+	if (bDelayed_ATK)
+	{
+		delayedTarget = target;
+	}
+	else
+	{
+		delayedTarget = nullptr;
+	}
 }
 
 void ATBG_Character_BattleEnemies::RecoverFromStun()
@@ -259,16 +280,39 @@ EAttackType ATBG_Character_BattleEnemies::ActionDecision(const TArray<ATBG_Chara
 	if (bRadialATK)
 	{
 		// TBD - 范围攻击
+		RadialATK(l_playerRef);
 
-
-		return EAttackType::AT_SkillATK;
+		// 如果切换视角，切换至受击的玩家角色视角
+		if (UCF_SR::Flib_GetBM()->bBOSSFight)
+		{
+			return EAttackType::AT_SkillATK;
+		}
+		else
+		{
+			UCF_SR::Flib_GetBM()->SwitchAndHideOtherPlayerChars(true, l_playerRef[0]);
+			return EAttackType::AT_SkillATK;
+		}
 	}
 	else
 	{
 		if (bDelayed_ATK)
 		{
 			// TBD - 延迟攻击
+			SingleATK(delayedTarget);
 
+			// 延迟攻击已结束，重置相关bool
+			SetDelayedTarget(false, delayedTarget);
+
+			// 如果切换视角，切换至受击的玩家角色视角
+			if (UCF_SR::Flib_GetBM()->bBOSSFight)
+			{
+				return EAttackType::AT_DelayATK_E;
+			}
+			else
+			{
+				UCF_SR::Flib_GetBM()->SwitchAndHideOtherPlayerChars(true, delayedTarget);
+				return EAttackType::AT_DelayATK_E;
+			}
 
 			return EAttackType::AT_DelayATK_E;
 		}
@@ -289,16 +333,41 @@ EAttackType ATBG_Character_BattleEnemies::ActionDecision(const TArray<ATBG_Chara
 			if (l_ShieldPlayerRef != nullptr)
 			{
 				// TBD - 有套盾对象
+				SingleATK(l_ShieldPlayerRef);
 
-
-				return EAttackType::AT_NormalATK;
+				// 如果切换视角，切换至受击的玩家角色视角
+				if (UCF_SR::Flib_GetBM()->bBOSSFight)
+				{
+					return EAttackType::AT_NormalATK;
+				}
+				else
+				{
+					UCF_SR::Flib_GetBM()->SwitchAndHideOtherPlayerChars(true, l_ShieldPlayerRef);
+					return EAttackType::AT_NormalATK;
+				}
 			}
 			else
 			{
-				// TBD - 无套盾对象
+				// 无套盾对象
+				ATBG_Character_BattlePlayer* l_TargetActor = nullptr;
+				// 打乱数组l_playerRef后取第一个，相当于随机取一个
+				l_TargetActor = l_playerRef[FMath::RandRange(0, (l_playerRef.Num() - 1))];
 
+				if (l_TargetActor == nullptr) return EAttackType::AT_EMAX;
 
-				return EAttackType::AT_NormalATK;
+				// 单体攻击
+				SingleATK(l_TargetActor);
+
+				// 如果切换视角，切换至受击的玩家角色视角
+				if (UCF_SR::Flib_GetBM()->bBOSSFight)
+				{
+					return EAttackType::AT_NormalATK;
+				}
+				else
+				{
+					UCF_SR::Flib_GetBM()->SwitchAndHideOtherPlayerChars(true, l_TargetActor);
+					return EAttackType::AT_NormalATK;
+				}
 			}
 		}
 	}

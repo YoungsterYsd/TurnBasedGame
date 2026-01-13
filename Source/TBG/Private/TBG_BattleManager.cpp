@@ -956,6 +956,9 @@ void ATBG_BattleManager::SwitchAndHideOtherPlayerChars(bool bHideOther, ATBG_Cha
 		ArrElement->SetHiddenForPlayer(bHideOther);
 	}
 	activePlayer->SetHiddenForPlayer(false);
+
+	//×Ô¶¯ÇÐ»»ÊÓ½Ç
+	UGameplayStatics::GetPlayerController(GetWorld(), 0)->SetViewTargetWithBlend(activePlayer);
 }
 
 void ATBG_BattleManager::ExecuteAction(EAttackType ATKType)
